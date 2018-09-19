@@ -1,0 +1,236 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: TrueFace SDK
+Parameters:
+  Namespace:
+    Type: String
+
+  VPC:
+    Type: AWS::EC2::VPC::Id
+
+  Cluster:
+    Type: String
+
+  DesiredTaskCount:
+    Type: Number
+
+  ALBListener:
+    Description: Application Load Balancer listener to register with
+    Type: String
+
+  PathPrefix:
+    Description: path to register with the Application Load Balancer
+    Type: String
+    Default: ""
+
+  NginxRepositoryName:
+    Type: String
+
+  TruefaceSpoofRepositoryName:
+    Type: String
+
+  TruefaceDashRepositoryName:
+    Type: String
+
+  APIKeysS3Path:
+    Type: String
+    Default: ""
+
+Conditions:
+  UseTruefaceSpoof: !Not [!Equals [!Ref TruefaceSpoofRepositoryName, ""]]
+  UseTruefaceDash: !Not [!Equals [!Ref TruefaceDashRepositoryName, ""]]
+  ApiIsPrivate: !Not [!Equals [!Ref APIKeysS3Path, ""]]
+
+Resources:
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: !Ref VPC
+      Port: 80 # will be overridden when ECS registers a task as a target
+      Protocol: HTTP
+      Matcher:
+        HttpCode: 200-299
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: !Sub /health
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+
+  ALBListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref ALBListener
+      Priority: 2
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - !Join ["/", [!Ref PathPrefix, "*"]]
+      Actions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+
+  ECSService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListenerRule
+    Properties:
+      # DeploymentConfiguration:
+      #   MaximumPercent: 100
+      #   # allow ECS to undeploy first
+      #   MinimumHealthyPercent: 0
+
+      # custom name makes it hard to update the stack, giving errors like this:
+      #
+      #   CloudFormation cannot update a stack when a custom-named resource requires replacing.
+      #   Rename parity-ropsten-1|parity-ropsten-1-service and update the stack again.
+      #
+      # ServiceName: !Sub ${Namespace}-service
+      Cluster: !Ref Cluster
+      Role: !Ref ServiceRole
+      DesiredCount: !Ref DesiredTaskCount
+      TaskDefinition: !Ref TaskDefinition
+      LoadBalancers:
+        - ContainerName: nginx-proxy
+          ContainerPort: 80
+          TargetGroupArn: !Ref TargetGroup
+
+  ServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      RoleName: !Sub ${Namespace}-nginx-service-role
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ecs-service
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - elasticloadbalancing:Describe*
+                  - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+                  - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+                  - ec2:Describe*
+                  - ec2:AuthorizeSecurityGroupIngress
+                  - elasticloadbalancing:RegisterTargets
+                  - elasticloadbalancing:DeregisterTargets
+                Resource: '*'
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Condition: ApiIsPrivate
+    Properties:
+      Path: /
+      RoleName: !Sub ${Namespace}-task-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: api-key-access
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:HeadObject
+                  - s3:GetObject
+                Resource: !Sub arn:aws:s3:::${APIKeysS3Path}
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: eth
+      TaskRoleArn: !If
+        - ApiIsPrivate
+        - !Ref TaskRole
+        - !Ref "AWS::NoValue"
+      NetworkMode: bridge
+      ContainerDefinitions:
+        - Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${NginxRepositoryName}:latest
+          Essential: true
+          Cpu: 256
+          Memory: 256
+          Name: nginx-proxy
+          PortMappings:
+            - ContainerPort: 80
+              Protocol: tcp
+          Links:
+            - trueface
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: nginx-proxy
+          Environment:
+            - Name: S3_PATH_TO_API_KEYS
+              Value: !Ref APIKeysS3Path
+            - !If
+              - UseTruefaceSpoof
+              - Name: HOST_TRUEFACE_SPOOF
+                Value: 'tf-spoof'
+              - !Ref "AWS::NoValue"
+
+            - !If
+              - UseTruefaceDash
+              - Name: HOST_TRUEFACE_DASH
+                Value: 'tf-dash'
+              - !Ref "AWS::NoValue"
+
+        - !If
+          - UseTruefaceSpoof
+          - Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${TruefaceSpoofRepositoryName}:latest
+            Essential: true
+            Cpu: 1024
+            Memory: 1024
+            Name: tf-spoof
+            PortMappings:
+              - ContainerPort: 80
+                Protocol: tcp
+            LogConfiguration:
+              LogDriver: awslogs
+              Options:
+                awslogs-group: !Ref LogGroup
+                awslogs-region: !Ref AWS::Region
+                awslogs-stream-prefix: tf-spoof
+
+        - !If
+          - UseTruefaceDash
+          - Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${TruefaceDashRepositoryName}:latest
+            Essential: true
+            Cpu: 1024
+            Memory: 1024
+            Name: tf-dash
+            PortMappings:
+              - ContainerPort: 80
+                Protocol: tcp
+            LogConfiguration:
+              LogDriver: awslogs
+              Options:
+                awslogs-group: !Ref LogGroup
+                awslogs-region: !Ref AWS::Region
+                awslogs-stream-prefix: tf-dash
+
+      # Volumes:
+      #   - Host:
+      #       SourcePath: /data/chains
+      #     Name: parity-chains
+      #   - Host:
+      #       SourcePath: /data/indexes
+      #     Name: eth-indexes
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: 1
+
+Outputs:
+  ECSService:
+    Description: service for KYC services
+    Value: !Ref ECSService

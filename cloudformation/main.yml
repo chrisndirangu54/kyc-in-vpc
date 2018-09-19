@@ -1,0 +1,340 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: root stack for parity in ECS
+Parameters:
+
+  Namespace:
+    Type: String
+    Default: ""
+
+  S3TemplatesPath:
+    Type: String
+
+  # VPC
+
+  VpcCIDR:
+    Description: IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.0.0.0/16
+
+  PublicSubnet1CIDR:
+    Description: IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.0.10.0/24
+
+  PublicSubnet2CIDR:
+    Description: IP range (CIDR notation) for the public subnet in the second Availability Zone
+    Type: String
+    Default: 10.0.11.0/24
+
+  PrivateSubnet1CIDR:
+    Description: IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    Default: 10.0.20.0/24
+
+  PrivateSubnet2CIDR:
+    Description: IP range (CIDR notation) for the private subnet in the second Availability Zone
+    Type: String
+    Default: 10.0.21.0/24
+
+  # ECS
+
+  # ECSAMI:
+  #   Description: AMI id
+  #   Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+  #   Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
+
+  SyncInstanceType:
+    Type: String
+    Description: Instance to sync the chain with for the first time
+    Default: c5.large # 3714 actual memory
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - r4.large
+      - r4.xlarge
+      - r4.2xlarge
+      - r4.4xlarge
+      - r4.8xlarge
+      - r4.16xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.18xlarge
+    ConstraintDescription: Please choose a valid instance type.
+  PostSyncInstanceType:
+    Type: String
+    Description: Instance to use after first sync
+    Default: t2.medium
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - r4.large
+      - r4.xlarge
+      - r4.2xlarge
+      - r4.4xlarge
+      - r4.8xlarge
+      - r4.16xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.18xlarge
+    ConstraintDescription: Please choose a valid instance type.
+  ChainSnapshotId:
+    Type: String
+    Description: EBS Snapshot from which to initiate the chain data
+    Default: ""
+  DNSName:
+    Type: String
+    Description: DNS name to register too
+  KeyName:
+    Type: String
+    Description: SSH Key name to access the machine
+    Default: ""
+  ParityClientRepositoryName:
+    Type: String
+    Description: parity client ECR repository name
+    Default: parity
+    AllowedValues:
+      - parity
+
+  DesiredTaskCount:
+    Type: Number
+    Description: how many instances of the parity + eth-indexer task should we run across our cluster?
+    Default: 1
+
+  VolumeType:
+    Type: String
+    Description: if you need data volumes attached to the cluster instances, specify the type
+    Default: ""
+    AllowedValues:
+      - ""
+      - io1
+      - gp2
+      - st1
+      - sc1
+  VolumeSize:
+    Type: Number
+    Description: if you need data volumes attached to the cluster instances, specify the size
+
+  NginxRepositoryName:
+    Type: String
+    Description: nginx ECR repository name
+    Default: nginx-proxy
+    AllowedValues:
+      - nginx-proxy
+
+  TruefacePath:
+    Type: String
+    Default: /trueface
+
+  TruefaceAPIKeyS3Path:
+    Type: String
+    Description: if this is a private api, provide a path to an API key file in S3
+    Default: ""
+
+Conditions:
+  Syncing: !Equals [ !Ref ChainSnapshotId, ""]
+  SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
+  RegisterDNS: !Not [!Equals [ !Ref DNSName, ""]]
+
+Resources:
+  VPC:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/vpc.yml
+      Parameters:
+        Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
+        VpcCIDR: !Ref VpcCIDR
+        PublicSubnet1CIDR: !Ref PublicSubnet1CIDR
+        PublicSubnet2CIDR: !Ref PublicSubnet2CIDR
+        PrivateSubnet1CIDR: !Ref PrivateSubnet1CIDR
+        PrivateSubnet2CIDR: !Ref PrivateSubnet2CIDR
+        EnableSSHAccess: !If
+          - SSHAccess
+          - "true"
+          - "false"
+
+  SecurityGroups:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/security-groups.yml
+      Parameters:
+        Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
+        VPC: !GetAtt VPC.Outputs.VPC
+        KeyName: !Ref KeyName
+
+  BastionHost:
+    Condition: SSHAccess
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/bastion.yml
+      Parameters:
+        KeyName: !Ref KeyName
+        Subnet: !GetAtt VPC.Outputs.PublicSubnet1
+        SecurityGroup: !GetAtt SecurityGroups.Outputs.LoadBalancerSecurityGroup
+
+  ALB:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/load-balancers.yml
+      Parameters:
+        Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
+        VPC: !GetAtt VPC.Outputs.VPC
+        Subnets: !GetAtt VPC.Outputs.PublicSubnets
+        SecurityGroup: !GetAtt SecurityGroups.Outputs.LoadBalancerSecurityGroup
+
+  ECS:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/ecs.yml
+      Parameters:
+        Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
+        # ECSAMI: !Ref ECSAMI
+        SecurityGroup: !GetAtt SecurityGroups.Outputs.ECSSecurityGroup
+        Subnets: !GetAtt VPC.Outputs.PrivateSubnets
+        InstanceType: !If
+          - Syncing
+          - !Ref SyncInstanceType
+          - !Ref PostSyncInstanceType
+        SnapshotId: !If
+          - Syncing
+          - !Ref "AWS::NoValue"
+          - !Ref ChainSnapshotId
+        VolumeSize: !Ref VolumeSize
+        VolumeType: !If
+          - Syncing
+          - !Ref SyncVolumeType
+          - !Ref PostSyncVolumeType
+        Iops: !If
+          - Syncing
+          - !Ref SyncIops
+          - !Ref PostSyncIops
+        KeyName: !Ref KeyName
+        NetworkName: !Ref NetworkName
+        SyncToBlock: !Ref SyncToBlock
+        AlertsEmail: !Ref AlertsEmail
+        # InstanceTenancy: !Ref InstanceTenancy
+
+  Ethereum:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: VPC
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/ethereum.yml
+      Parameters:
+        Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
+        VPC: !GetAtt VPC.Outputs.VPC
+        Cluster: !GetAtt ECS.Outputs.Cluster
+        DesiredTaskCount: !Ref DesiredTaskCount
+        # AvailabilityZones: !GetAtt VPC.Outputs.AvailabilityZones
+        ALBListener: !GetAtt ALB.Outputs.Listener
+        ParityClientRepositoryName: !Ref ParityClientRepositoryName
+        NginxRepositoryName: !Ref NginxRepositoryName
+        NetworkName: !Ref NetworkName
+        EthIndexerRepositoryName: !Ref EthIndexerRepositoryName
+        IndexerStartBlock: !Ref IndexerStartBlock
+        IndexerConfirmationHeight: !Ref IndexerConfirmationHeight
+        IndexerAPIKeyS3Path: !Ref IndexerAPIKeyS3Path
+        Path: !Ref IndexerAPIPath
+
+  # DNS:
+  #   Type: AWS::CloudFormation::Stack
+  #   Condition: RegisterDNS
+  #   DependsOn:
+  #     - Ethereum
+  #     - ECS
+  #   Properties:
+  #     TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/dns-old.yml
+  #     Parameters:
+  #       Namespace: !Ref Namespace
+  #       DNSName: !Ref DNSName
+  #       ChainSnapshotId: !Ref ChainSnapshotId
+  #       ECSCluster: !GetAtt ECS.Outputs.Cluster
+
+  DNSAlias:
+    Type: AWS::CloudFormation::Stack
+    Condition: RegisterDNS
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/dns.yml
+      Parameters:
+        DNSName: !Ref DNSName
+        AliasedHostedZoneId: !GetAtt ALB.Outputs.CanonicalHostedZoneNameID
+        AliasedDNSName: !GetAtt ALB.Outputs.LoadBalancerUrl
+
+Outputs:
+  VPC:
+    Description: A reference to the created VPC
+    Value: !GetAtt VPC.Outputs.VPC
+
+  EthDNSName:
+    Description: indexer DNS name
+    Value: !Join ["", [!GetAtt ALB.Outputs.LoadBalancerUrl, !Ref IndexerAPIPath]]
+
+  ECSCluster:
+    Description: ECS cluster
+    Value: !GetAtt ECS.Outputs.Cluster
+
+  EthECSService:
+    Value: !GetAtt Ethereum.Outputs.ECSService
+
+  VPC:
+    Value: !GetAtt VPC.Outputs.VPC
+
+  BastionHost:
+    Value: !GetAtt BastionHost.Outputs.PublicDNSName
+
+  BastionPublicIP:
+    Value: !GetAtt BastionHost.Outputs.PublicIP
+
+  # JsonRpcDNSName:
+  #   Description: indexer DNS name
+  #   Value: !GetAtt Ethereum.Outputs.JsonRpcDNSName

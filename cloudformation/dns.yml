@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DNS for parity ECS stack
+Parameters:
+  DNSName:
+    Type: String
+
+  # optional
+  AliasedHostedZoneId:
+    Type: String
+
+  AliasedDNSName:
+    Type: String
+
+Resources:
+  HostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: !Ref DNSName
+
+  ALBAlias:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref HostedZone
+      Comment: Zone apex alias targeted to load balancer
+      RecordSets:
+        - Name: !Sub ${DNSName}.
+          Type: A
+          AliasTarget:
+            HostedZoneId: !Ref AliasedHostedZoneId
+            DNSName: !Ref AliasedDNSName
