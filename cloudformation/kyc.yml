@@ -160,7 +160,8 @@ Resources:
             - ContainerPort: 80
               Protocol: tcp
           Links:
-            - trueface
+            - trueface-spoof
+            - trueface-dash
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -173,14 +174,25 @@ Resources:
             - !If
               - UseTruefaceSpoof
               - Name: HOST_TRUEFACE_SPOOF
-                Value: 'tf-spoof'
+                Value: 'trueface-spoof'
+              - !Ref "AWS::NoValue"
+            - !If
+              - UseTruefaceSpoof
+              - Name: PORT_TRUEFACE_SPOOF
+                Value: '8085'
               - !Ref "AWS::NoValue"
 
             - !If
               - UseTruefaceDash
               - Name: HOST_TRUEFACE_DASH
-                Value: 'tf-dash'
+                Value: 'trueface-dash'
               - !Ref "AWS::NoValue"
+            - !If
+              - UseTruefaceDash
+              - Name: PORT_TRUEFACE_DASH
+                Value: '5000'
+              - !Ref "AWS::NoValue"
+
 
         - !If
           - UseTruefaceSpoof
@@ -188,16 +200,16 @@ Resources:
             Essential: true
             Cpu: 1024
             Memory: 1024
-            Name: tf-spoof
+            Name: trueface-spoof
             PortMappings:
-              - ContainerPort: 80
+              - ContainerPort: 8085
                 Protocol: tcp
             LogConfiguration:
               LogDriver: awslogs
               Options:
                 awslogs-group: !Ref LogGroup
                 awslogs-region: !Ref AWS::Region
-                awslogs-stream-prefix: tf-spoof
+                awslogs-stream-prefix: trueface-spoof
 
         - !If
           - UseTruefaceDash
@@ -205,32 +217,32 @@ Resources:
             Essential: true
             Cpu: 1024
             Memory: 1024
-            Name: tf-dash
+            Name: trueface-dash
             PortMappings:
-              - ContainerPort: 80
+              - ContainerPort: 5000
                 Protocol: tcp
+            Links:
+              - !If
+                - UseTruefaceSpoof
+                - trueface-spoof
+                - !Ref "AWS::NoValue"
             LogConfiguration:
               LogDriver: awslogs
               Options:
                 awslogs-group: !Ref LogGroup
                 awslogs-region: !Ref AWS::Region
-                awslogs-stream-prefix: tf-dash
-
-      # Volumes:
-      #   - Host:
-      #       SourcePath: /data/chains
-      #     Name: parity-chains
-      #   - Host:
-      #       SourcePath: /data/indexes
-      #     Name: eth-indexes
+                awslogs-stream-prefix: trueface-dash
 
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Ref AWS::StackName
-      RetentionInDays: 1
+      RetentionInDays: 3
 
 Outputs:
   ECSService:
-    Description: service for KYC services
+    Description: ECS service for KYC services
     Value: !Ref ECSService
+
+  TruefaceSpoofUrl:
+

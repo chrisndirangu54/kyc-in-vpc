@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: root stack for parity in ECS
+Description: Tradle third party KYC services stack
 Parameters:
 
   Namespace:
@@ -43,52 +43,10 @@ Parameters:
   #   Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
   #   Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
 
-  SyncInstanceType:
+  InstanceType:
     Type: String
-    Description: Instance to sync the chain with for the first time
-    Default: c5.large # 3714 actual memory
-    AllowedValues:
-      - t2.micro
-      - t2.small
-      - t2.medium
-      - t2.large
-      - t2.xlarge
-      - t2.2xlarge
-      - m3.medium
-      - m3.large
-      - m3.xlarge
-      - m3.2xlarge
-      - m4.large
-      - m4.xlarge
-      - m4.2xlarge
-      - m4.4xlarge
-      - m4.10xlarge
-      - r3.large
-      - r3.xlarge
-      - r3.2xlarge
-      - r3.4xlarge
-      - r3.8xlarge
-      - r4.large
-      - r4.xlarge
-      - r4.2xlarge
-      - r4.4xlarge
-      - r4.8xlarge
-      - r4.16xlarge
-      - c4.large
-      - c4.xlarge
-      - c4.2xlarge
-      - c4.4xlarge
-      - c4.8xlarge
-      - c5.large
-      - c5.xlarge
-      - c5.2xlarge
-      - c5.4xlarge
-      - c5.9xlarge
-      - c5.18xlarge
-    ConstraintDescription: Please choose a valid instance type.
-  PostSyncInstanceType:
-    Type: String
-    Description: Instance to use after first sync
+    Description: EC2 Instance type to run services on
+    # Default: c5.large # 3714 actual memory
     Default: t2.medium
     AllowedValues:
       - t2.micro
@@ -129,28 +87,36 @@ Parameters:
       - c5.9xlarge
       - c5.18xlarge
     ConstraintDescription: Please choose a valid instance type.
-  ChainSnapshotId:
+
+  NginxRepositoryName:
     Type: String
-    Description: EBS Snapshot from which to initiate the chain data
-    Default: ""
-  DNSName:
-    Type: String
-    Description: DNS name to register too
-  KeyName:
-    Type: String
-    Description: SSH Key name to access the machine
-    Default: ""
-  ParityClientRepositoryName:
-    Type: String
-    Description: parity client ECR repository name
-    Default: parity
+    Description: nginx ECR repository name
+    Default: nginx-proxy
     AllowedValues:
-      - parity
+      - nginx-proxy
+
+  TruefaceSpoofRepositoryName:
+    Type: String
+    Description: trueface spoof ECR repository name
+    Default: ""
+    AllowedValues:
+      - ""
+      - trueface-spoof
+
+  TruefaceDashRepositoryName:
+    Type: String
+    Description: trueface dashboard ECR repository name
+    Default: ""
+    AllowedValues:
+      - ""
+      - trueface-dash
 
   DesiredTaskCount:
     Type: Number
-    Description: how many instances of the parity + eth-indexer task should we run across our cluster?
+    Description: how many instances of each service you want to run in parallel
     Default: 1
+
+  # Optional
 
   VolumeType:
     Type: String
@@ -162,28 +128,26 @@ Parameters:
       - gp2
       - st1
       - sc1
+
   VolumeSize:
     Type: Number
     Description: if you need data volumes attached to the cluster instances, specify the size
 
-  NginxRepositoryName:
+  APIKeysS3Path:
     Type: String
-    Description: nginx ECR repository name
-    Default: nginx-proxy
-    AllowedValues:
-      - nginx-proxy
+    Description: if this is a private api, provide a path to an env file with API keys in S3
+    Default: ""
 
-  TruefacePath:
+  DNSName:
     Type: String
-    Default: /trueface
+    Description: DNS name to register
 
-  TruefaceAPIKeyS3Path:
+  KeyName:
     Type: String
-    Description: if this is a private api, provide a path to an API key file in S3
+    Description: SSH Key name to access the machine
     Default: ""
 
 Conditions:
-  Syncing: !Equals [ !Ref ChainSnapshotId, ""]
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
   RegisterDNS: !Not [!Equals [ !Ref DNSName, ""]]
 
@@ -242,34 +206,18 @@ Resources:
         # ECSAMI: !Ref ECSAMI
         SecurityGroup: !GetAtt SecurityGroups.Outputs.ECSSecurityGroup
         Subnets: !GetAtt VPC.Outputs.PrivateSubnets
-        InstanceType: !If
-          - Syncing
-          - !Ref SyncInstanceType
-          - !Ref PostSyncInstanceType
-        SnapshotId: !If
-          - Syncing
-          - !Ref "AWS::NoValue"
-          - !Ref ChainSnapshotId
+        InstanceType: !Ref InstanceType
         VolumeSize: !Ref VolumeSize
-        VolumeType: !If
-          - Syncing
-          - !Ref SyncVolumeType
-          - !Ref PostSyncVolumeType
-        Iops: !If
-          - Syncing
-          - !Ref SyncIops
-          - !Ref PostSyncIops
+        VolumeType: !Ref VolumeType
+        # Iops: !Ref Iops
         KeyName: !Ref KeyName
-        NetworkName: !Ref NetworkName
-        SyncToBlock: !Ref SyncToBlock
-        AlertsEmail: !Ref AlertsEmail
         # InstanceTenancy: !Ref InstanceTenancy
 
-  Ethereum:
+  KYC:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPC
     Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/ethereum.yml
+      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/kyc.yml
       Parameters:
         Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
         VPC: !GetAtt VPC.Outputs.VPC
@@ -277,30 +225,13 @@ Resources:
         DesiredTaskCount: !Ref DesiredTaskCount
         # AvailabilityZones: !GetAtt VPC.Outputs.AvailabilityZones
         ALBListener: !GetAtt ALB.Outputs.Listener
-        ParityClientRepositoryName: !Ref ParityClientRepositoryName
         NginxRepositoryName: !Ref NginxRepositoryName
-        NetworkName: !Ref NetworkName
-        EthIndexerRepositoryName: !Ref EthIndexerRepositoryName
-        IndexerStartBlock: !Ref IndexerStartBlock
-        IndexerConfirmationHeight: !Ref IndexerConfirmationHeight
-        IndexerAPIKeyS3Path: !Ref IndexerAPIKeyS3Path
-        Path: !Ref IndexerAPIPath
+        TruefaceSpoofRepositoryName: !Ref TruefaceSpoofRepositoryName
+        TruefaceDashRepositoryName: !Ref TruefaceDashRepositoryName
+        APIKeysS3Path: !Ref APIKeysS3Path
+        PathPrefix: !Ref APIPathPrefix
 
-  # DNS:
-  #   Type: AWS::CloudFormation::Stack
-  #   Condition: RegisterDNS
-  #   DependsOn:
-  #     - Ethereum
-  #     - ECS
-  #   Properties:
-  #     TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/dns-old.yml
-  #     Parameters:
-  #       Namespace: !Ref Namespace
-  #       DNSName: !Ref DNSName
-  #       ChainSnapshotId: !Ref ChainSnapshotId
-  #       ECSCluster: !GetAtt ECS.Outputs.Cluster
-
-  DNSAlias:
+  DNS:
     Type: AWS::CloudFormation::Stack
     Condition: RegisterDNS
     Properties:
@@ -312,29 +243,23 @@ Resources:
 
 Outputs:
   VPC:
-    Description: A reference to the created VPC
+    Description: KYC services stack VPC
     Value: !GetAtt VPC.Outputs.VPC
 
-  EthDNSName:
-    Description: indexer DNS name
-    Value: !Join ["", [!GetAtt ALB.Outputs.LoadBalancerUrl, !Ref IndexerAPIPath]]
+  LoadBalancerDNSName:
+    Description: DNS name
+    Value: !Join ["", [!GetAtt ALB.Outputs.LoadBalancerUrl, !Ref APIPathPrefix]]
 
   ECSCluster:
     Description: ECS cluster
     Value: !GetAtt ECS.Outputs.Cluster
 
-  EthECSService:
-    Value: !GetAtt Ethereum.Outputs.ECSService
-
-  VPC:
-    Value: !GetAtt VPC.Outputs.VPC
+  ECSService:
+    Value: !GetAtt KYC.Outputs.ECSService
 
   BastionHost:
+    Description: Bastion host, to allow SSH'ing into container instances
     Value: !GetAtt BastionHost.Outputs.PublicDNSName
 
   BastionPublicIP:
     Value: !GetAtt BastionHost.Outputs.PublicIP
-
-  # JsonRpcDNSName:
-  #   Description: indexer DNS name
-  #   Value: !GetAtt Ethereum.Outputs.JsonRpcDNSName
