@@ -31,6 +31,9 @@ Parameters:
   TruefaceDashRepositoryName:
     Type: String
 
+  RankOneRepositoryName:
+    Type: String
+
   APIKeysS3Path:
     Type: String
     Default: ""
@@ -38,6 +41,7 @@ Parameters:
 Conditions:
   UseTruefaceSpoof: !Not [!Equals [!Ref TruefaceSpoofRepositoryName, ""]]
   UseTruefaceDash: !Not [!Equals [!Ref TruefaceDashRepositoryName, ""]]
+  UseRankOne: !Not [!Equals [!Ref RankOneRepositoryName, ""]]
   ApiIsPrivate: !Not [!Equals [!Ref APIKeysS3Path, ""]]
 
 Resources:
@@ -162,6 +166,7 @@ Resources:
           Links:
             - trueface-spoof
             - trueface-dash
+            - rank-one
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -179,6 +184,10 @@ Resources:
               Value: 'trueface-dash'
             - Name: PORT_TRUEFACE_DASH
               Value: '5000'
+            - Name: HOST_RANK_ONE
+              Value: 'rank-one'
+            - Name: PORT_RANK_ONE
+              Value: '8080'
             - Name: ENABLE_TRUEFACE_SPOOF
               Value: !If
                 - UseTruefaceSpoof
@@ -187,6 +196,11 @@ Resources:
             - Name: ENABLE_TRUEFACE_DASH
               Value: !If
                 - UseTruefaceDash
+                - '1'
+                - '0'
+            - Name: ENABLE_RANK_ONE
+              Value: !If
+                - UseRankOne
                 - '1'
                 - '0'
 
@@ -228,6 +242,23 @@ Resources:
                 awslogs-group: !Ref LogGroup
                 awslogs-region: !Ref AWS::Region
                 awslogs-stream-prefix: trueface-dash
+
+        - !If
+          - UseRankOne
+          - Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${RankOneRepositoryName}:latest
+            Essential: true
+            Cpu: 1024
+            Memory: 1024
+            Name: rank-one
+            PortMappings:
+              - ContainerPort: 8080
+                Protocol: tcp
+            LogConfiguration:
+              LogDriver: awslogs
+              Options:
+                awslogs-group: !Ref LogGroup
+                awslogs-region: !Ref AWS::Region
+                awslogs-stream-prefix: rank-one
 
   LogGroup:
     Type: AWS::Logs::LogGroup
