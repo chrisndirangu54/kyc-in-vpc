@@ -220,6 +220,7 @@ Resources:
                 awslogs-group: !Ref LogGroup
                 awslogs-region: !Ref AWS::Region
                 awslogs-stream-prefix: trueface-spoof
+          - !Ref "AWS::NoValue"
 
         - !If
           - UseTruefaceDash
@@ -242,6 +243,7 @@ Resources:
                 awslogs-group: !Ref LogGroup
                 awslogs-region: !Ref AWS::Region
                 awslogs-stream-prefix: trueface-dash
+          - !Ref "AWS::NoValue"
 
         - !If
           - UseRankOne
@@ -259,6 +261,7 @@ Resources:
                 awslogs-group: !Ref LogGroup
                 awslogs-region: !Ref AWS::Region
                 awslogs-stream-prefix: rank-one
+          - !Ref "AWS::NoValue"
 
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -270,6 +273,3 @@ Outputs:
   ECSService:
     Description: ECS service for KYC services
     Value: !Ref ECSService
-
-  TruefaceSpoofUrl:
-

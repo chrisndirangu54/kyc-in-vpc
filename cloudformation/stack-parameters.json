@@ -9,11 +9,15 @@
   },
   {
     "ParameterKey": "TruefaceSpoofRepositoryName",
-    "ParameterValue": "trueface-spoof"
+    "ParameterValue": ""
   },
   {
     "ParameterKey": "TruefaceDashRepositoryName",
-    "ParameterValue": "trueface-dash"
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "RankOneRepositoryName",
+    "ParameterValue": "roc-face-mock"
   },
   {
     "ParameterKey": "KeyName",

@@ -111,6 +111,14 @@ Parameters:
       - ""
       - trueface-dash
 
+  RankOneRepositoryName:
+    Type: String
+    Description: rankone face matcher repository name
+    Default: ""
+    AllowedValues:
+      - ""
+      - roc-face-mock
+
   DesiredTaskCount:
     Type: Number
     Description: how many instances of each service you want to run in parallel
