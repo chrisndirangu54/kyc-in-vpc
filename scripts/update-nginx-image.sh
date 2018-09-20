@@ -1,3 +1,5 @@
 #!/bin/bash
 
-./scripts/build_and_upload.sh nginx-proxy docker/nginx
+set -euo pipefail
+
+./scripts/build_and_upload.sh tradle-kyc-nginx-proxy docker/nginx

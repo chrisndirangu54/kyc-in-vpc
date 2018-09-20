@@ -171,28 +171,24 @@ Resources:
           Environment:
             - Name: S3_PATH_TO_API_KEYS
               Value: !Ref APIKeysS3Path
-            - !If
-              - UseTruefaceSpoof
-              - Name: HOST_TRUEFACE_SPOOF
-                Value: 'trueface-spoof'
-              - !Ref "AWS::NoValue"
-            - !If
-              - UseTruefaceSpoof
-              - Name: PORT_TRUEFACE_SPOOF
-                Value: '8085'
-              - !Ref "AWS::NoValue"
-
-            - !If
-              - UseTruefaceDash
-              - Name: HOST_TRUEFACE_DASH
-                Value: 'trueface-dash'
-              - !Ref "AWS::NoValue"
-            - !If
-              - UseTruefaceDash
-              - Name: PORT_TRUEFACE_DASH
-                Value: '5000'
-              - !Ref "AWS::NoValue"
-
+            - Name: HOST_TRUEFACE_SPOOF
+              Value: 'trueface-spoof'
+            - Name: PORT_TRUEFACE_SPOOF
+              Value: '8085'
+            - Name: HOST_TRUEFACE_DASH
+              Value: 'trueface-dash'
+            - Name: PORT_TRUEFACE_DASH
+              Value: '5000'
+            - Name: ENABLE_TRUEFACE_SPOOF
+              Value: !If
+                - UseTruefaceSpoof
+                - '1'
+                - '0'
+            - Name: ENABLE_TRUEFACE_DASH
+              Value: !If
+                - UseTruefaceDash
+                - '1'
+                - '0'
 
         - !If
           - UseTruefaceSpoof

@@ -1,1 +1,1 @@
-FROM: trueface/onprem-dashboard:latest
+FROM trueface/onprem-dashboard:latest

@@ -16,8 +16,9 @@ fi
 
 # source:
 # https://github.com/docker-library/docs/issues/496#issuecomment-370452557
-envsubst "`env | awk -F = '{printf \" $$%s\", $$1}'`" < /etc/nginx/conf.d/template.conf > /etc/nginx/nginx.conf
 
-# cat /etc/nginx/nginx.conf
+# API_KEY=${API_KEY-}
+
+envsubst "`env | awk -F = '{printf \" $$%s\", $$1}'`" < /etc/nginx/conf.d/template.conf > /etc/nginx/nginx.conf
 
 nginx -g "daemon off;"

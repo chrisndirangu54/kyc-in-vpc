@@ -91,9 +91,9 @@ Parameters:
   NginxRepositoryName:
     Type: String
     Description: nginx ECR repository name
-    Default: nginx-proxy
+    Default: tradle-kyc-nginx-proxy
     AllowedValues:
-      - nginx-proxy
+      - tradle-kyc-nginx-proxy
 
   TruefaceSpoofRepositoryName:
     Type: String

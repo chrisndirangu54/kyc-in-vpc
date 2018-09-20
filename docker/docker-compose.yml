@@ -20,7 +20,7 @@ services:
   #     NETWORK_NAME: "${CHAIN}"
 
   nginx:
-    # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/nginx-proxy:latest'
+    # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/tradle-kyc-nginx-proxy:latest'
     container_name: tradle_vpc_nginx
     build: './nginx'
     ports:
@@ -28,9 +28,11 @@ services:
     environment:
       HOST_TRUEFACE_SPOOF: trueface-spoof
       PORT_TRUEFACE_SPOOF: 8085
+      ENABLE_TRUEFACE_SPOOF: '1'
       HOST_TRUEFACE_DASH: trueface-dash
       PORT_TRUEFACE_DASH: 5000
-      # API_KEY: blah
+      ENABLE_TRUEFACE_DASH: '1'
+      API_KEY: ""
 
   trueface-spoof:
     container_name: trueface_spoof_tradle_vpc
