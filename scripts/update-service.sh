@@ -3,13 +3,13 @@
 set -x
 # set -euo pipefail
 
-source scripts/env.sh
+source "$(dirname $0)/env.sh"
 
 OUTPUTS=$(aws --profile "$AWS_PROFILE" cloudformation describe-stacks \
   --stack-name "$STACK_NAME" | jq -r .Stacks[].Outputs)
 
 CLUSTER=$(echo $OUTPUTS | jq -r '.[] | select(.OutputKey=="ECSCluster").OutputValue')
-SERVICE=$(echo $OUTPUTS | jq -r '.[] | select(.OutputKey=="EthECSService").OutputValue')
+SERVICE=$(echo $OUTPUTS | jq -r '.[] | select(.OutputKey=="ECSService").OutputValue')
 
 # TASK_DEFINITION_NAME=$(aws --profile "$AWS_PROFILE" ecs describe-services \
 #   --services "$SERVICE" --cluster "$CLUSTER" \

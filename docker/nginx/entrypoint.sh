@@ -1,6 +1,15 @@
 #!/bin/sh
 set -e
 
+envify() {
+  if [ -n "$2" ]
+  then
+    envsubst "`env | awk -F = '{printf \" $$%s\", $$1}'`" < "$1" > "$2"
+  else
+    envsubst "`env | awk -F = '{printf \" $$%s\", $$1}'`" < "$1"
+  fi
+}
+
 if [ -n "$S3_PATH_TO_API_KEYS" ]
 then
   echo "loading api key from $S3_PATH_TO_API_KEYS"
@@ -17,8 +26,58 @@ fi
 # source:
 # https://github.com/docker-library/docs/issues/496#issuecomment-370452557
 
-# API_KEY=${API_KEY-}
+# COPY location.tmpl /etc/nginx/conf.d/template-location.conf
 
-envsubst "`env | awk -F = '{printf \" $$%s\", $$1}'`" < /etc/nginx/conf.d/template.conf > /etc/nginx/nginx.conf
+if [ -n "$API_KEY" ]
+then
+  echo "API_KEY is set"
+else
+  export API_KEY=""
+fi
+
+LOCATIONS=""
+
+if [[ "$ENABLE_TRUEFACE_SPOOF" == "1" ]]
+then
+  echo "adding /location for TrueFace Spoof"
+  export LOCATION_HOSTNAME="$HOST_TRUEFACE_SPOOF"
+  export LOCATION_PORT="$PORT_TRUEFACE_SPOOF"
+  LOCATION=$(envify /etc/nginx/conf.d/template-location.conf)
+  LOCATIONS=$(echo "$LOCATIONS
+
+$LOCATION
+")
+fi
+
+if [[ "$ENABLE_TRUEFACE_DASH" == "1" ]]
+then
+  echo "adding /location for TrueFace dashboard"
+  export LOCATION_HOSTNAME="$HOST_TRUEFACE_DASH"
+  export LOCATION_PORT="$PORT_TRUEFACE_DASH"
+  LOCATION=$(envify /etc/nginx/conf.d/template-location.conf)
+  LOCATIONS=$(echo "$LOCATIONS
+
+$LOCATION
+")
+fi
+
+if [[ "$ENABLE_RANK_ONE" == "1" ]]
+then
+  echo "adding /location for RankOne"
+  export LOCATION_HOSTNAME="$HOST_RANK_ONE"
+  export LOCATION_PORT="$PORT_RANK_ONE"
+  LOCATION=$(envify /etc/nginx/conf.d/template-location.conf)
+  LOCATIONS=$(echo "$LOCATIONS
+
+$LOCATION
+")
+fi
+
+export LOCATIONS="$LOCATIONS"
+
+envify /etc/nginx/conf.d/template-main.conf /etc/nginx/nginx.conf
+
+# echo "NGINX CONF:"
+# cat /etc/nginx/nginx.conf
 
 nginx -g "daemon off;"

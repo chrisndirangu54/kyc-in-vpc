@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: TrueFace SDK
+Description: Tradle integrated KYC services
 Parameters:
   Namespace:
     Type: String
@@ -22,16 +22,13 @@ Parameters:
     Type: String
     Default: ""
 
-  NginxRepositoryName:
+  EnableTruefaceSpoof:
     Type: String
 
-  TruefaceSpoofRepositoryName:
+  EnableTruefaceDash:
     Type: String
 
-  TruefaceDashRepositoryName:
-    Type: String
-
-  RankOneRepositoryName:
+  EnableRankOne:
     Type: String
 
   APIKeysS3Path:
@@ -39,10 +36,18 @@ Parameters:
     Default: ""
 
 Conditions:
-  UseTruefaceSpoof: !Not [!Equals [!Ref TruefaceSpoofRepositoryName, ""]]
-  UseTruefaceDash: !Not [!Equals [!Ref TruefaceDashRepositoryName, ""]]
-  UseRankOne: !Not [!Equals [!Ref RankOneRepositoryName, ""]]
+  UseTruefaceSpoof: !Equals [!Ref EnableTruefaceSpoof, "true"]
+  UseTruefaceDash: !Equals [!Ref EnableTruefaceDash, "true"]
+  UseRankOne: !Equals [!Ref EnableRankOne, "true"]
   ApiIsPrivate: !Not [!Equals [!Ref APIKeysS3Path, ""]]
+
+Mappings:
+  repo:
+    ecr:
+      nginx: tradle-kyc-nginx-proxy
+      truefaceSpoof: trueface-spoof
+      truefaceDash: trueface-dash
+      rankOne: roc-face-mock
 
 Resources:
   TargetGroup:
@@ -76,15 +81,15 @@ Resources:
     Type: AWS::ECS::Service
     DependsOn: ALBListenerRule
     Properties:
-      # DeploymentConfiguration:
-      #   MaximumPercent: 100
-      #   # allow ECS to undeploy first
-      #   MinimumHealthyPercent: 0
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        # allow ECS to undeploy first
+        MinimumHealthyPercent: 0
 
       # custom name makes it hard to update the stack, giving errors like this:
       #
       #   CloudFormation cannot update a stack when a custom-named resource requires replacing.
-      #   Rename parity-ropsten-1|parity-ropsten-1-service and update the stack again.
+      #   Rename xyz-1-oldname|xyz-1-newname and update the stack again.
       #
       # ServiceName: !Sub ${Namespace}-service
       Cluster: !Ref Cluster
@@ -95,6 +100,8 @@ Resources:
         - ContainerName: nginx-proxy
           ContainerPort: 80
           TargetGroupArn: !Ref TargetGroup
+      # NetworkConfiguration:
+      #   AwsvpcConfiguration:
 
   ServiceRole:
     Type: AWS::IAM::Role
@@ -148,14 +155,14 @@ Resources:
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: eth
+      Family: kyc
       TaskRoleArn: !If
         - ApiIsPrivate
         - !Ref TaskRole
         - !Ref "AWS::NoValue"
       NetworkMode: bridge
       ContainerDefinitions:
-        - Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${NginxRepositoryName}:latest
+        - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, nginx], ":latest"]]
           Essential: true
           Cpu: 256
           Memory: 256
@@ -164,9 +171,18 @@ Resources:
             - ContainerPort: 80
               Protocol: tcp
           Links:
-            - trueface-spoof
-            - trueface-dash
-            - rank-one
+            - !If
+              - UseTruefaceSpoof
+              - trueface-spoof
+              - !Ref AWS::NoValue
+            - !If
+              - UseTruefaceDash
+              - trueface-dash
+              - !Ref AWS::NoValue
+            - !If
+              - UseRankOne
+              - rank-one
+              - !Ref AWS::NoValue
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -206,13 +222,14 @@ Resources:
 
         - !If
           - UseTruefaceSpoof
-          - Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${TruefaceSpoofRepositoryName}:latest
+          - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, truefaceSpoof], ":latest"]]
             Essential: true
-            Cpu: 1024
-            Memory: 1024
+            Cpu: 512
+            Memory: 512
             Name: trueface-spoof
             PortMappings:
               - ContainerPort: 8085
+                HostPort: 0
                 Protocol: tcp
             LogConfiguration:
               LogDriver: awslogs
@@ -224,13 +241,14 @@ Resources:
 
         - !If
           - UseTruefaceDash
-          - Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${TruefaceDashRepositoryName}:latest
+          - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, truefaceDash], ":latest"]]
             Essential: true
-            Cpu: 1024
-            Memory: 1024
+            Cpu: 512
+            Memory: 512
             Name: trueface-dash
             PortMappings:
               - ContainerPort: 5000
+                HostPort: 0
                 Protocol: tcp
             Links:
               - !If
@@ -247,13 +265,14 @@ Resources:
 
         - !If
           - UseRankOne
-          - Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${RankOneRepositoryName}:latest
+          - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, rankOne], ":latest"]]
             Essential: true
-            Cpu: 1024
-            Memory: 1024
+            Cpu: 512
+            Memory: 512
             Name: rank-one
             PortMappings:
               - ContainerPort: 8080
+                HostPort: 0
                 Protocol: tcp
             LogConfiguration:
               LogDriver: awslogs

@@ -3,7 +3,7 @@
 set -euo pipefail
 set -x
 
-source scripts/env.sh
+source "$(dirname $0)/env.sh"
 
 EC2_INSTANCE=$(./scripts/get-container-instance.sh)
 

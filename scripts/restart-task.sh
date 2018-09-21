@@ -3,20 +3,20 @@
 set -x
 set -euo pipefail
 
-source scripts/env.sh
+source "$(dirname $0)/env.sh"
 
 cf() {
-  aws --profile "$AWS_PROFILE" cloudformation $@
+  aws cloudformation $@
 }
 
 ecs() {
-  aws --profile "$AWS_PROFILE" ecs $@
+  aws ecs $@
 }
 
 OUTPUTS=$(cf describe-stacks --stack-name "$STACK_NAME" | jq -r .Stacks[].Outputs)
 
 CLUSTER=$(echo $OUTPUTS | jq -r '.[] | select(.OutputKey=="ECSCluster").OutputValue')
-SERVICE=$(echo $OUTPUTS | jq -r '.[] | select(.OutputKey=="EthECSService").OutputValue')
+SERVICE=$(echo $OUTPUTS | jq -r '.[] | select(.OutputKey=="ECSService").OutputValue')
 
 TASK_DEFINITION_NAME=$(ecs describe-services --services "$SERVICE" --cluster "$CLUSTER" \
   | jq -r .services[0].taskDefinition)
@@ -31,4 +31,4 @@ do
   ecs stop-task --task "$t" --cluster "$CLUSTER"
 done
 
-./scripts/update-service.sh
+"$(dirname $0)/update-service.sh"

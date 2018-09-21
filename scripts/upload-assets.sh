@@ -3,7 +3,12 @@
 set -x
 # set -euo pipefail
 
-source scripts/env.sh
+source "$(dirname $0)/env.sh"
+
+if [ ! -n "$BUCKET" ];
+then
+  exit 0
+fi
 
 CUR_DIR=$(pwd)
 cd ./service && zip -r "$CUR_DIR/lambda.zip" . && cd "$CUR_DIR"

@@ -3,7 +3,7 @@
 # set -x
 set -euo pipefail
 
-source scripts/env.sh
+source "$(dirname $0)/env.sh"
 
 aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
   | jq -r '.Stacks[].Outputs[] | select(.OutputKey == "EthDNSName").OutputValue'

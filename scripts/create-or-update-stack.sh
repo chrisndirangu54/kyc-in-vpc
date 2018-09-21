@@ -3,13 +3,13 @@
 set -x
 set -euo pipefail
 
-source scripts/env.sh
+source "$(dirname $0)/env.sh"
 
 # relative to build-params.js script
 PARAMS_FILE=${1-"../cloudformation/stack-parameters.json"}
 
-./scripts/validate-templates.sh
-./scripts/upload-assets.sh
+"$(dirname $0)/validate-templates.sh"
+"$(dirname $0)/upload-assets.sh"
 
 PARAMETERS=$(node scripts/build-params.js "$PARAMS_FILE" "$BUCKET/$STACK_NAME")
 CUR_DIR=$(pwd)

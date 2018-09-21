@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-source scripts/env.sh
+source "$(dirname "$0")/env.sh"
 
 require() {
     command -v "$1" > /dev/null 2>&1 || {

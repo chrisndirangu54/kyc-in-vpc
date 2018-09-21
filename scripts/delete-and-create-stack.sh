@@ -3,8 +3,8 @@
 set -x
 set -euo pipefail
 
-source scripts/env.sh
+source "$(dirname $0)/env.sh"
 
-aws --profile "$AWS_PROFILE" cloudformation delete-stack --stack-name "$STACK_NAME"
-aws --profile "$AWS_PROFILE" cloudformation wait stack-delete-complete --stack-name "$STACK_NAME"
-./scripts/create-or-update-stack.sh
+aws cloudformation delete-stack --stack-name "$STACK_NAME"
+aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME"
+"$(dirname $0)/create-or-update-stack.sh"

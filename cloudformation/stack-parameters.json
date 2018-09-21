@@ -8,16 +8,8 @@
     "ParameterValue": "1"
   },
   {
-    "ParameterKey": "TruefaceSpoofRepositoryName",
-    "ParameterValue": ""
-  },
-  {
-    "ParameterKey": "TruefaceDashRepositoryName",
-    "ParameterValue": ""
-  },
-  {
-    "ParameterKey": "RankOneRepositoryName",
-    "ParameterValue": "roc-face-mock"
+    "ParameterKey": "EnableRankOne",
+    "ParameterValue": "true"
   },
   {
     "ParameterKey": "KeyName",

@@ -20,6 +20,10 @@ Parameters:
     Type: String
     Description: ECS instance type
 
+  # ServiceENIIP:
+  #   Type: String
+  #   Description: Private IP for ENI
+
   VolumeSize:
     Type: Number
     Default: 100
@@ -130,9 +134,6 @@ Resources:
               - elasticloadbalancing:DeregisterTargets
             Resource: "*"
           - Effect: Allow
-            Action: sns:Publish
-            Resource: !Ref SyncTopic
-          - Effect: Allow
             Action:
               - cloudformation:DescribeStackResources
             Resource: !Ref "AWS::StackId"
@@ -152,7 +153,7 @@ Resources:
       VPCZoneIdentifier: !Ref Subnets
       # allow remove before replace
       MinSize: 1
-      MaxSize: 2
+      MaxSize: 3
       DesiredCapacity: 1
       Tags:
         - Key: Name
@@ -163,7 +164,6 @@ Resources:
         Timeout: PT10M
     UpdatePolicy:
       AutoScalingRollingUpdate:
-        # allow to remove during update
         MinInstancesInService: 1
         MaxBatchSize: 1
         PauseTime: PT10M
@@ -175,12 +175,24 @@ Resources:
           - ScheduledActions
         WaitOnResourceSignals: true
 
+  # ServiceENI:
+  #   Type: AWS::EC2::NetworkInterface
+  #   Properties:
+  #     # Tags:
+  #     #   - Key: foo
+  #     #     Value: bar
+  #     Description: ENI for EC2 instance to attach to in order to have a stable MAC Address
+  #     SourceDestCheck: 'false'
+  #     GroupSet:
+  #       - !Ref SecurityGroup
+  #     SubnetId: !Select [ 0, !Ref Subnets ]
+  #     PrivateIpAddress: !Ref ServiceENIIP
+
   ECSLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      # limitation inherited from https://github.com/rumblefishdev/cf-parity-mainnet
-      #   The node needs to now its public IP,
-      #   as this is used as enode identifier broadcasted to other nodes.
+      # copy-pasted from eth stack
+      # can this be set to false?
       AssociatePublicIpAddress: true
       ImageId:  !FindInMap [AWSRegionToAMI, !Ref "AWS::Region", AMI]
       InstanceType: !Ref InstanceType
@@ -192,12 +204,13 @@ Resources:
         - !Ref SecurityGroup
       IamInstanceProfile: !Ref ECSInstanceProfile
       BlockDeviceMappings:
-        - DeviceName: "/dev/sdh"
-          Ebs: !If
-            - NeedsVolume
-            - VolumeSize: !Ref VolumeSize
+        - !If
+          - NeedsVolume
+          - DeviceName: "/dev/sdh"
+            Ebs:
+              VolumeSize: !Ref VolumeSize
               VolumeType: !Ref VolumeType
-            - !Ref "AWS::NoValue"
+          - !Ref AWS::NoValue
       UserData:
         "Fn::Base64": !Sub |
           #!/bin/bash
@@ -223,14 +236,33 @@ Resources:
               command: !If
                 - NeedsVolume
                 - "mkfs.ext4 /dev/sdh"
-                - "echo 'not running mkfs /dev/sdh'"
+                - "echo 'skipping step, no volume'"
             04_mount:
               command: !If
                 - NeedsVolume
-                - "mkfs.ext4 /dev/sdh"
                 - "mount /dev/sdh /data"
+                - "echo 'skipping step, no volume to mount'"
               test: "! mountpoint -q /data"
+            # 05_attach_eni:
+            #   command: "/usr/local/bin/attach-eni.sh"
           files:
+            # "/usr/local/bin/attach-eni.sh":
+            #   mode: "000755"
+            #   owner: root
+            #   group: root
+            #   content: !Sub |
+            #     set -x
+            #     set -euo pipefail
+
+            #     AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+            #     echo "AWS_INSTANCE_ID: $AWS_INSTANCE_ID"
+
+            #     aws ec2 describe-network-interfaces
+            #     aws ec2 attach-network-interface \
+            #       --network-interface-id ${ServiceENI} \
+            #       --instance-id "$AWS_INSTANCE_ID" \
+            #       --device-index 1
+
             "/etc/cfn/cfn-hup.conf":
               mode: 000400
               owner: root

@@ -88,36 +88,29 @@ Parameters:
       - c5.18xlarge
     ConstraintDescription: Please choose a valid instance type.
 
-  NginxRepositoryName:
+  EnableTruefaceSpoof:
     Type: String
-    Description: nginx ECR repository name
-    Default: tradle-kyc-nginx-proxy
+    Description: enable TrueFace Spoof service
+    Default: "false"
     AllowedValues:
-      - tradle-kyc-nginx-proxy
+      - "true"
+      - "false"
 
-  TruefaceSpoofRepositoryName:
+  EnableTruefaceDash:
     Type: String
-    Description: trueface spoof ECR repository name
-    Default: ""
+    Description: enable TrueFace dashboard
+    Default: "false"
     AllowedValues:
-      - ""
-      - trueface-spoof
+      - "true"
+      - "false"
 
-  TruefaceDashRepositoryName:
+  EnableRankOne:
     Type: String
-    Description: trueface dashboard ECR repository name
-    Default: ""
+    Description: enable RankOne service
+    Default: "false"
     AllowedValues:
-      - ""
-      - trueface-dash
-
-  RankOneRepositoryName:
-    Type: String
-    Description: rankone face matcher repository name
-    Default: ""
-    AllowedValues:
-      - ""
-      - roc-face-mock
+      - "true"
+      - "false"
 
   DesiredTaskCount:
     Type: Number
@@ -140,6 +133,7 @@ Parameters:
   VolumeSize:
     Type: Number
     Description: if you need data volumes attached to the cluster instances, specify the size
+    Default: 100
 
   APIKeysS3Path:
     Type: String
@@ -149,6 +143,7 @@ Parameters:
   DNSName:
     Type: String
     Description: DNS name to register
+    Default: ""
 
   KeyName:
     Type: String
@@ -158,6 +153,11 @@ Parameters:
 Conditions:
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
   RegisterDNS: !Not [!Equals [ !Ref DNSName, ""]]
+
+Mappings:
+  routing:
+    prefix:
+      kyc: ""
 
 Resources:
   VPC:
@@ -233,11 +233,11 @@ Resources:
         DesiredTaskCount: !Ref DesiredTaskCount
         # AvailabilityZones: !GetAtt VPC.Outputs.AvailabilityZones
         ALBListener: !GetAtt ALB.Outputs.Listener
-        NginxRepositoryName: !Ref NginxRepositoryName
-        TruefaceSpoofRepositoryName: !Ref TruefaceSpoofRepositoryName
-        TruefaceDashRepositoryName: !Ref TruefaceDashRepositoryName
+        EnableTruefaceSpoof: !Ref EnableTruefaceSpoof
+        EnableTruefaceDash: !Ref EnableTruefaceDash
+        EnableRankOne: !Ref EnableRankOne
         APIKeysS3Path: !Ref APIKeysS3Path
-        PathPrefix: !Ref APIPathPrefix
+        PathPrefix: !FindInMap [routing, prefix, kyc]
 
   DNS:
     Type: AWS::CloudFormation::Stack
@@ -256,7 +256,10 @@ Outputs:
 
   LoadBalancerDNSName:
     Description: DNS name
-    Value: !Join ["", [!GetAtt ALB.Outputs.LoadBalancerUrl, !Ref APIPathPrefix]]
+    Value: !Join
+      - "/"
+      - - !GetAtt ALB.Outputs.LoadBalancerUrl
+        - !FindInMap [routing, prefix, kyc]
 
   ECSCluster:
     Description: ECS cluster

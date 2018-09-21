@@ -20,9 +20,9 @@ services:
   #     NETWORK_NAME: "${CHAIN}"
 
   nginx:
-    # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/tradle-kyc-nginx-proxy:latest'
+    image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/tradle-kyc-nginx-proxy:latest'
     container_name: tradle_vpc_nginx
-    build: './nginx'
+    # build: './nginx'
     ports:
       - 9876:80
     environment:
@@ -32,18 +32,27 @@ services:
       HOST_TRUEFACE_DASH: trueface-dash
       PORT_TRUEFACE_DASH: 5000
       ENABLE_TRUEFACE_DASH: '1'
+      HOST_RANK_ONE: rank-one
+      PORT_RANK_ONE: 5000
+      ENABLE_RANK_ONE: '0'
       API_KEY: ""
 
-  trueface-spoof:
-    container_name: trueface_spoof_tradle_vpc
-    build: './trueface-spoof'
-    # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:latest'
-    ports:
-      - 8085:8085
+  # trueface-spoof:
+  #   container_name: trueface_spoof_tradle_vpc
+  #   build: './trueface-spoof'
+  #   # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:latest'
+  #   ports:
+  #     - 8085:8085
 
-  trueface-dash:
-    container_name: trueface_dash_tradle_vpc
-    build: './trueface-dash'
-    # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-dash:latest'
-    ports:
-      - 5000:5000
+  # trueface-dash:
+  #   container_name: trueface_dash_tradle_vpc
+  #   build: './trueface-dash'
+  #   # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-dash:latest'
+  #   ports:
+  #     - 5000:5000
+
+  # rank-one:
+  #   container_name: rank_one_tradle_vpc
+  #   image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/rank-one:latest'
+  #   ports:
+  #     - 8080:8080
