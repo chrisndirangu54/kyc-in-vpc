@@ -77,7 +77,7 @@ export LOCATIONS="$LOCATIONS"
 
 envify /etc/nginx/conf.d/template-main.conf /etc/nginx/nginx.conf
 
-# echo "NGINX CONF:"
-# cat /etc/nginx/nginx.conf
+echo "NGINX CONF:"
+cat /etc/nginx/nginx.conf
 
-nginx -g "daemon off;"
+nginx
