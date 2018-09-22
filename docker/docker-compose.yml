@@ -1,27 +1,8 @@
 version: '2'
 services:
-  # parity:
-  #   # image: "parity/parity:stable"
-  #   image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/parity:latest'
-  #   restart: always
-  #   container_name: "parity-${CHAIN}"
-  #   working_dir: /parity/
-  #   # see parity-settings.png
-  #   # command: "--chain ${CHAIN} --jsonrpc-interface all --ws-interface all --ws-origins all --no-warp"
-  #   volumes:
-  #     - "$HOME/.parity/share/io.parity.ethereum/docker/${CHAIN}:/root/.local/share/io.parity.ethereum/"
-  #   ports:
-  #     # - 8180:8180
-  #     - 8545:8545
-  #     - 8546:8546
-  #     - 30303:30303
-  #     - 30303:30303/udp
-  #   environment:
-  #     NETWORK_NAME: "${CHAIN}"
-
   nginx:
     image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/tradle-kyc-nginx-proxy:latest'
-    container_name: tradle_vpc_nginx
+    # container_name: tradle_vpc_nginx
     # build: './nginx'
     ports:
       - 9876:80
@@ -31,18 +12,18 @@ services:
       ENABLE_TRUEFACE_SPOOF: '1'
       HOST_TRUEFACE_DASH: trueface-dash
       PORT_TRUEFACE_DASH: 5000
-      ENABLE_TRUEFACE_DASH: '1'
+      ENABLE_TRUEFACE_DASH: '0'
       HOST_RANK_ONE: rank-one
       PORT_RANK_ONE: 5000
-      ENABLE_RANK_ONE: '0'
+      ENABLE_RANK_ONE: '1'
       API_KEY: ""
 
-  # trueface-spoof:
-  #   container_name: trueface_spoof_tradle_vpc
-  #   build: './trueface-spoof'
-  #   # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:latest'
-  #   ports:
-  #     - 8085:8085
+  trueface-spoof:
+    container_name: trueface_spoof_tradle_vpc
+    # build: './trueface-spoof'
+    image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:latest'
+    ports:
+      - 8085:8085
 
   # trueface-dash:
   #   container_name: trueface_dash_tradle_vpc
@@ -51,8 +32,8 @@ services:
   #   ports:
   #     - 5000:5000
 
-  # rank-one:
-  #   container_name: rank_one_tradle_vpc
-  #   image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/rank-one:latest'
-  #   ports:
-  #     - 8080:8080
+  rank-one:
+    # container_name: rank_one_tradle_vpc
+    image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/roc-face:latest'
+    ports:
+      - 8080:8080

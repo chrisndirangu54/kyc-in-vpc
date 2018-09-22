@@ -112,6 +112,33 @@ Parameters:
       - "true"
       - "false"
 
+  TruefaceSpoofPath:
+    Type: String
+    Description: root path segement of TrueFace Spoof API
+    Default: "trueface-spoof"
+    # AllowedPattern: "^[a-zA-Z0-9\\-]+$"
+    AllowedValues:
+      - 'trueface-spoof'
+    ConstraintDescription: "path not editable at this time, use value: trueface-spoof"
+
+  TruefaceDashPath:
+    Type: String
+    Description: root path segement of TrueFace dashboard
+    Default: "trueface-dash"
+    # AllowedPattern: "^[a-zA-Z0-9\\-]+$"
+    AllowedValues:
+      - 'trueface-dash'
+    ConstraintDescription: "path not editable at this time, use value: trueface-dash"
+
+  RankOnePath:
+    Type: String
+    Description: root path segement of RankOne API
+    Default: "rank-one"
+    # AllowedPattern: "^[a-zA-Z0-9\\-]+$"
+    AllowedValues:
+      - 'rank-one'
+    ConstraintDescription: "path not editable at this time, use value: rank-one"
+
   DesiredTaskCount:
     Type: Number
     Description: how many instances of each service you want to run in parallel
@@ -153,11 +180,9 @@ Parameters:
 Conditions:
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
   RegisterDNS: !Not [!Equals [ !Ref DNSName, ""]]
-
-Mappings:
-  routing:
-    prefix:
-      kyc: ""
+  UseTruefaceSpoof: !Equals [!Ref EnableTruefaceSpoof, "true"]
+  UseTruefaceDash: !Equals [!Ref EnableTruefaceDash, "true"]
+  UseRankOne: !Equals [!Ref EnableRankOne, "true"]
 
 Resources:
   VPC:
@@ -236,8 +261,13 @@ Resources:
         EnableTruefaceSpoof: !Ref EnableTruefaceSpoof
         EnableTruefaceDash: !Ref EnableTruefaceDash
         EnableRankOne: !Ref EnableRankOne
+        # TruefaceSpoofPath: !Ref TruefaceSpoofPath
+        # TruefaceDashPath: !Ref TruefaceDashPath
+        # RankOnePath: !Ref RankOnePath
+        TruefaceSpoofPath: 'trueface-spoof'
+        TruefaceDashPath: 'trueface-dash'
+        RankOnePath: 'rank-one'
         S3PathAPIKeys: !Ref S3PathAPIKeys
-        PathPrefix: !FindInMap [routing, prefix, kyc]
 
   DNS:
     Type: AWS::CloudFormation::Stack
@@ -254,19 +284,41 @@ Outputs:
     Description: KYC services stack VPC
     Value: !GetAtt VPC.Outputs.VPC
 
-  LoadBalancerDNSName:
-    Description: DNS name
-    Value: !Join
-      - "/"
-      - - !GetAtt ALB.Outputs.LoadBalancerUrl
-        - !FindInMap [routing, prefix, kyc]
-
   ECSCluster:
     Description: ECS cluster
     Value: !GetAtt ECS.Outputs.Cluster
 
   ECSService:
     Value: !GetAtt KYC.Outputs.ECSService
+
+  LoadBalancerDNSName:
+    Description: DNS name
+    Value: !GetAtt ALB.Outputs.LoadBalancerUrl
+
+  TruefaceSpoofApiUrl:
+    Condition: UseTruefaceSpoof
+    Description: TrueFace spoof API base url
+    Value: !Join
+      - "/"
+      - - !GetAtt ALB.Outputs.LoadBalancerUrl
+        - !Ref TruefaceSpoofPath
+        - "spdetect"
+
+  TruefaceDashApiUrl:
+    Condition: UseTruefaceDash
+    Description: TrueFace dashboard base url
+    Value: !Join
+      - "/"
+      - - !GetAtt ALB.Outputs.LoadBalancerUrl
+        - !Ref TruefaceDashPath
+
+  RankOneApiUrl:
+    Condition: UseRankOne
+    Description: RankOne API base url
+    Value: !Join
+      - "/"
+      - - !GetAtt ALB.Outputs.LoadBalancerUrl
+        - !Ref RankOnePath
 
   BastionHost:
     Description: Bastion host, to allow SSH'ing into container instances

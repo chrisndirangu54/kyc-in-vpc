@@ -9,7 +9,7 @@
   },
   {
     "ParameterKey": "EnableTruefaceSpoof",
-    "ParameterValue": "true"
+    "ParameterValue": "false"
   },
   {
     "ParameterKey": "EnableRankOne",
