@@ -31,7 +31,7 @@ Parameters:
   EnableRankOne:
     Type: String
 
-  APIKeysS3Path:
+  S3PathAPIKeys:
     Type: String
     Default: ""
 
@@ -39,7 +39,7 @@ Conditions:
   UseTruefaceSpoof: !Equals [!Ref EnableTruefaceSpoof, "true"]
   UseTruefaceDash: !Equals [!Ref EnableTruefaceDash, "true"]
   UseRankOne: !Equals [!Ref EnableRankOne, "true"]
-  ApiIsPrivate: !Not [!Equals [!Ref APIKeysS3Path, ""]]
+  ApiIsPrivate: !Not [!Equals [!Ref S3PathAPIKeys, ""]]
 
 Mappings:
   repo:
@@ -47,7 +47,7 @@ Mappings:
       nginx: tradle-kyc-nginx-proxy
       truefaceSpoof: trueface-spoof
       truefaceDash: trueface-dash
-      rankOne: roc-face-mock
+      rankOne: roc-face
 
 Resources:
   TargetGroup:
@@ -82,9 +82,9 @@ Resources:
     DependsOn: ALBListenerRule
     Properties:
       DeploymentConfiguration:
-        MaximumPercent: 100
+        MaximumPercent: 200
         # allow ECS to undeploy first
-        MinimumHealthyPercent: 0
+        MinimumHealthyPercent: 100
 
       # custom name makes it hard to update the stack, giving errors like this:
       #
@@ -150,7 +150,7 @@ Resources:
                 Action:
                   - s3:HeadObject
                   - s3:GetObject
-                Resource: !Sub arn:aws:s3:::${APIKeysS3Path}
+                Resource: !Sub arn:aws:s3:::${S3PathAPIKeys}
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -191,7 +191,7 @@ Resources:
               awslogs-stream-prefix: nginx-proxy
           Environment:
             - Name: S3_PATH_TO_API_KEYS
-              Value: !Ref APIKeysS3Path
+              Value: !Ref S3PathAPIKeys
             - Name: HOST_TRUEFACE_SPOOF
               Value: 'trueface-spoof'
             - Name: PORT_TRUEFACE_SPOOF

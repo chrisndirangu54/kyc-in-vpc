@@ -8,11 +8,19 @@
     "ParameterValue": "1"
   },
   {
+    "ParameterKey": "EnableTruefaceSpoof",
+    "ParameterValue": "true"
+  },
+  {
     "ParameterKey": "EnableRankOne",
     "ParameterValue": "true"
   },
   {
     "ParameterKey": "KeyName",
     "ParameterValue": "micro1"
+  },
+  {
+    "ParameterKey": "S3PathAPIKeys",
+    "ParameterValue": "mvayngrib-serverless-deployment/kyc-services/api-keys.env"
   }
 ]

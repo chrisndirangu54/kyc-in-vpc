@@ -135,7 +135,7 @@ Parameters:
     Description: if you need data volumes attached to the cluster instances, specify the size
     Default: 100
 
-  APIKeysS3Path:
+  S3PathAPIKeys:
     Type: String
     Description: if this is a private api, provide a path to an env file with API keys in S3
     Default: ""
@@ -236,7 +236,7 @@ Resources:
         EnableTruefaceSpoof: !Ref EnableTruefaceSpoof
         EnableTruefaceDash: !Ref EnableTruefaceDash
         EnableRankOne: !Ref EnableRankOne
-        APIKeysS3Path: !Ref APIKeysS3Path
+        S3PathAPIKeys: !Ref S3PathAPIKeys
         PathPrefix: !FindInMap [routing, prefix, kyc]
 
   DNS:
