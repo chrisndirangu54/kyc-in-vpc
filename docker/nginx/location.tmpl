@@ -12,6 +12,9 @@
         return 403;
       }
 
+      # some apis require large images, or even video
+      client_max_body_size 100M;
+
       # Only requests matching the whitelist expectations will
       # get sent to the application server
       proxy_pass http://${LOCATION_HOSTNAME}:${LOCATION_PORT}/;
