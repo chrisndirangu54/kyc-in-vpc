@@ -20,7 +20,7 @@
     "ParameterValue": "micro1"
   },
   {
-    "ParameterKey": "S3PathAPIKeys",
-    "ParameterValue": "mvayngrib-serverless-deployment/kyc-services/api-keys.env"
+    "ParameterKey": "S3PathToWriteDiscovery",
+    "ParameterValue": "mvayngrib-serverless-deployment/kyc-services/discovery.json"
   }
 ]

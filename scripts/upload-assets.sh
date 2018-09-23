@@ -5,7 +5,7 @@ set -x
 
 source "$(dirname $0)/env.sh"
 
-if [ ! -n "$BUCKET" ];
+if [[ ! "$BUCKET" ]]
 then
   exit 0
 fi

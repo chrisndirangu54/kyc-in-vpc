@@ -173,15 +173,16 @@ Parameters:
     Description: if you need data volumes attached to the cluster instances, specify the size
     Default: 100
 
-  S3PathAPIKeys:
+  S3PathToWriteDiscovery:
     Type: String
-    Description: if this is a private api, provide a path to an env file with API keys in S3
-    Default: ""
+    Description: |
+      S3 path to write discovery info to
+      This is typically something like: tdl-xxxx-ltd-private-conf-bucket-xyz/ecs-services.json
 
-  DNSName:
-    Type: String
-    Description: DNS name to register
-    Default: ""
+  # DNSName:
+  #   Type: String
+  #   Description: DNS name to register
+  #   Default: ""
 
   KeyName:
     Type: String
@@ -190,7 +191,7 @@ Parameters:
 
 Conditions:
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
-  RegisterDNS: !Not [!Equals [ !Ref DNSName, ""]]
+  # RegisterDNS: !Not [!Equals [ !Ref DNSName, ""]]
   UseTruefaceSpoof: !Equals [!Ref EnableTruefaceSpoof, "true"]
   UseTruefaceDash: !Equals [!Ref EnableTruefaceDash, "true"]
   UseRankOne: !Equals [!Ref EnableRankOne, "true"]
@@ -247,6 +248,7 @@ Resources:
       TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/ecs.yml
       Parameters:
         Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
+        VPC: !GetAtt VPC.Outputs.VPC
         # ECSAMI: !Ref ECSAMI
         SecurityGroup: !GetAtt SecurityGroups.Outputs.ECSSecurityGroup
         Subnets: !GetAtt VPC.Outputs.PrivateSubnets
@@ -256,39 +258,58 @@ Resources:
         # Iops: !Ref Iops
         KeyName: !Ref KeyName
         # InstanceTenancy: !Ref InstanceTenancy
-
-  KYC:
-    Type: AWS::CloudFormation::Stack
-    DependsOn: VPC
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/kyc.yml
-      Parameters:
-        Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
-        VPC: !GetAtt VPC.Outputs.VPC
-        Cluster: !GetAtt ECS.Outputs.Cluster
+        ALBUrl: !GetAtt ALB.Outputs.LoadBalancerUrl
+        S3PathToWriteDiscovery: !Ref S3PathToWriteDiscovery
         DesiredTaskCount: !Ref DesiredTaskCount
-        # AvailabilityZones: !GetAtt VPC.Outputs.AvailabilityZones
         ALBListener: !GetAtt ALB.Outputs.Listener
         EnableTruefaceSpoof: !Ref EnableTruefaceSpoof
         EnableTruefaceDash: !Ref EnableTruefaceDash
         EnableRankOne: !Ref EnableRankOne
-        # TruefaceSpoofPath: !Ref TruefaceSpoofPath
-        # TruefaceDashPath: !Ref TruefaceDashPath
-        # RankOnePath: !Ref RankOnePath
         TruefaceSpoofPath: 'trueface-spoof'
         TruefaceDashPath: 'trueface-dash'
         RankOnePath: 'rank-one'
-        S3PathAPIKeys: !Ref S3PathAPIKeys
 
-  DNS:
-    Type: AWS::CloudFormation::Stack
-    Condition: RegisterDNS
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/dns.yml
-      Parameters:
-        DNSName: !Ref DNSName
-        AliasedHostedZoneId: !GetAtt ALB.Outputs.CanonicalHostedZoneNameID
-        AliasedDNSName: !GetAtt ALB.Outputs.LoadBalancerUrl
+  # KYC sub-stack was collapsed into ECS because of this:
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-attribute-dependson.html
+  #
+  #   When you use Auto Scaling or Amazon Elastic Compute Cloud (Amazon EC2) to create container instances
+  #   for an Amazon ECS cluster, the Amazon ECS service resource must have a dependency on the
+  #   Auto Scaling group or Amazon EC2 instances
+  #
+  # this required DependsOn ECSService -> AutoScalingGroup makes it really hard to separate the two
+
+  # KYC:
+  #   Type: AWS::CloudFormation::Stack
+  #   DependsOn: VPC
+  #   Properties:
+  #     TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/kyc.yml
+  #     Parameters:
+  #       Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
+  #       VPC: !GetAtt VPC.Outputs.VPC
+  #       Cluster: !GetAtt ECS.Outputs.Cluster
+  #       DesiredTaskCount: !Ref DesiredTaskCount
+  #       # AvailabilityZones: !GetAtt VPC.Outputs.AvailabilityZones
+  #       ALBListener: !GetAtt ALB.Outputs.Listener
+  #       AutoScalingGroup: !GetAtt ECS.Outputs.AutoScalingGroup
+  #       EnableTruefaceSpoof: !Ref EnableTruefaceSpoof
+  #       EnableTruefaceDash: !Ref EnableTruefaceDash
+  #       EnableRankOne: !Ref EnableRankOne
+  #       # TruefaceSpoofPath: !Ref TruefaceSpoofPath
+  #       # TruefaceDashPath: !Ref TruefaceDashPath
+  #       # RankOnePath: !Ref RankOnePath
+  #       TruefaceSpoofPath: 'trueface-spoof'
+  #       TruefaceDashPath: 'trueface-dash'
+  #       RankOnePath: 'rank-one'
+
+  # DNS:
+  #   Type: AWS::CloudFormation::Stack
+  #   Condition: RegisterDNS
+  #   Properties:
+  #     TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/dns.yml
+  #     Parameters:
+  #       DNSName: !Ref DNSName
+  #       AliasedHostedZoneId: !GetAtt ALB.Outputs.CanonicalHostedZoneNameID
+  #       AliasedDNSName: !GetAtt ALB.Outputs.LoadBalancerUrl
 
 Outputs:
   VPC:
@@ -300,7 +321,7 @@ Outputs:
     Value: !GetAtt ECS.Outputs.Cluster
 
   ECSService:
-    Value: !GetAtt KYC.Outputs.ECSService
+    Value: !GetAtt ECS.Outputs.ECSService
 
   LoadBalancerDNSName:
     Description: DNS name

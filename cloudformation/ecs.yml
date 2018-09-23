@@ -4,6 +4,9 @@ Parameters:
   Namespace:
     Type: String
 
+  VPC:
+    Type: AWS::EC2::VPC::Id
+
   # ECSAMI:
   #   Description: AMI id
   #   Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
@@ -20,9 +23,19 @@ Parameters:
     Type: String
     Description: ECS instance type
 
+  ALBUrl:
+    Type: String
+
+  S3PathToWriteDiscovery:
+    Type: String
+
   # ServiceENIIP:
   #   Type: String
   #   Description: Private IP for ENI
+
+  # ClusterSize:
+  #   Type: Number
+  #   Default: 1
 
   VolumeSize:
     Type: Number
@@ -37,9 +50,38 @@ Parameters:
     Description: SSH Key name to access the machine
     Default: ""
 
+  DesiredTaskCount:
+    Type: Number
+
+  ALBListener:
+    Description: Application Load Balancer listener to register with
+    Type: String
+
+  EnableTruefaceSpoof:
+    Type: String
+
+  EnableTruefaceDash:
+    Type: String
+
+  EnableRankOne:
+    Type: String
+
+  TruefaceSpoofPath:
+    Type: String
+
+  TruefaceDashPath:
+    Type: String
+
+  RankOnePath:
+    Type: String
+
 Conditions:
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
   NeedsVolume: !Not [!Equals [ !Ref VolumeType, ""]]
+  ShouldSaveDiscovery: !Not [!Equals [ !Ref S3PathToWriteDiscovery, ""]]
+  UseTruefaceSpoof: !Equals [!Ref EnableTruefaceSpoof, "true"]
+  UseTruefaceDash: !Equals [!Ref EnableTruefaceDash, "true"]
+  UseRankOne: !Equals [!Ref EnableRankOne, "true"]
 
 Mappings:
   # source:
@@ -77,6 +119,13 @@ Mappings:
       AMI: ami-01bca91ecf4c1f494
     us-gov-west-1:
       AMI: ami-5256cf33
+
+  repo:
+    ecr:
+      nginx: tradle-kyc-nginx-proxy
+      truefaceSpoof: trueface-spoof
+      truefaceDash: trueface-dash
+      rankOne: roc-face
 
 Resources:
 
@@ -137,6 +186,14 @@ Resources:
             Action:
               - cloudformation:DescribeStackResources
             Resource: !Ref "AWS::StackId"
+          - !If
+            - ShouldSaveDiscovery
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource:
+                - !Sub arn:aws:s3:::${S3PathToWriteDiscovery}
+            - !Ref AWS::NoValue
 
   ECSInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -151,7 +208,6 @@ Resources:
       # AvailabilityZones: !Ref AvailabilityZones
       LaunchConfigurationName: !Ref ECSLaunchConfiguration
       VPCZoneIdentifier: !Ref Subnets
-      # allow remove before replace
       MinSize: 1
       MaxSize: 3
       DesiredCapacity: 1
@@ -248,7 +304,14 @@ Resources:
                 - "mount /dev/sdh /data"
                 - "echo 'skipping step, no volume to mount'"
               test: "! mountpoint -q /data"
-            # 05_attach_eni:
+
+            05_gen_discovery:
+              command: !If
+                - ShouldSaveDiscovery
+                - "/usr/local/bin/gen-discovery.sh"
+                - 'echo "S3PathToWriteDiscovery not specified, not writing discovery + credentials to S3"'
+
+            # 06_attach_eni:
             #   command: "/usr/local/bin/attach-eni.sh"
           files:
             # "/usr/local/bin/attach-eni.sh":
@@ -331,6 +394,42 @@ Resources:
                 log_stream_name = ${ECSCluster}
                 datetime_format = %Y-%m-%dT%H:%M:%SZ
 
+            "/usr/local/bin/gen-discovery.sh":
+              mode: "000755"
+              owner: root
+              group: root
+              content: !Sub |
+                set -x
+                set -euo pipefail
+
+                echo "generating discovery & credentials"
+
+                API_KEY=$(openssl rand -base64 40)
+
+                mkdir -p /data/discovery/
+                # see kyc.yml for how it's used
+                echo -e "API_KEY=\"$API_KEY\"" >> /data/discovery/nginx.env
+
+                cat <<EOF > /data/discovery/ecs-services.json
+                {
+                  "apiKey": "$API_KEY",
+                  "apiUrl": "${ALBUrl}",
+                  "services": {
+                    "trueface": {
+                      "enabled": ${EnableTruefaceSpoof},
+                      "path": "${TruefaceSpoofPath}",
+                    },
+                    "rankone": {
+                      "enabled": ${EnableRankOne},
+                      "path": "${RankOnePath}",
+                    }
+                  }
+                }
+                EOF
+
+                echo "writing discovery + credentials to s3 path: ${S3PathToWriteDiscovery}"
+                aws s3 cp /data/discovery/ecs-services.json "s3://${S3PathToWriteDiscovery}"
+
           services:
             sysvinit:
               cfn-hup:
@@ -346,6 +445,365 @@ Resources:
                   - /etc/awslogs/awslogs.conf
                   - /etc/awslogs/awscli.conf
 
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: !Ref VPC
+      Port: 80 # will be overridden when ECS registers a task as a target
+      Protocol: HTTP
+      Matcher:
+        HttpCode: 200-299
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: !Sub /health
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+
+  ALBListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref ALBListener
+      Priority: 3
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - "/*"
+      Actions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+
+  ECSService:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - ALBListenerRule
+      - ECSAutoScalingGroup
+    Properties:
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        # no interruption in service
+        MinimumHealthyPercent: 100
+
+      # custom name makes it hard to update the stack, giving errors like this:
+      #
+      #   CloudFormation cannot update a stack when a custom-named resource requires replacing.
+      #   Rename xyz-1-oldname|xyz-1-newname and update the stack again.
+      #
+      # ServiceName: !Sub ${Namespace}-service
+      Cluster: !Ref ECSCluster
+      Role: !Ref ServiceRole
+      DesiredCount: !Ref DesiredTaskCount
+      TaskDefinition: !Ref TaskDefinition
+      LoadBalancers:
+        - ContainerName: nginx-proxy
+          ContainerPort: 80
+          TargetGroupArn: !Ref TargetGroup
+      # NetworkConfiguration:
+      #   AwsvpcConfiguration:
+
+  ServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      RoleName: !Sub ${Namespace}-ecs-service-role
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ecs-service
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - elasticloadbalancing:Describe*
+                  - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+                  - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+                  - ec2:Describe*
+                  - ec2:AuthorizeSecurityGroupIngress
+                  - elasticloadbalancing:RegisterTargets
+                  - elasticloadbalancing:DeregisterTargets
+                Resource: '*'
+
+  # TaskRole:
+  #   Type: AWS::IAM::Role
+  #   Condition: ApiIsPrivate
+  #   Properties:
+  #     Path: /
+  #     RoleName: !Sub ${Namespace}-task-role
+  #     AssumeRolePolicyDocument:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: ecs-tasks.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     Policies:
+  #       - PolicyName: api-key-access
+  #         PolicyDocument:
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - s3:HeadObject
+  #                 - s3:GetObject
+  #               Resource:
+  #                 - !Sub arn:aws:s3:::${S3PathAPIKeys}
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: kyc
+      # TaskRoleArn: !If
+      #   - ApiIsPrivate
+      #   - !Ref TaskRole
+      #   - !Ref "AWS::NoValue"
+      NetworkMode: bridge
+      Volumes:
+        - Host:
+            SourcePath: /data/discovery
+          Name: discovery
+
+      ContainerDefinitions:
+        - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, nginx], ":latest"]]
+          Essential: true
+          Cpu: 256
+          Memory: 256
+          Name: nginx-proxy
+          PortMappings:
+            - ContainerPort: 80
+              Protocol: tcp
+          Links:
+            - !If
+              - UseTruefaceSpoof
+              - !Ref TruefaceSpoofPath
+              - !Ref AWS::NoValue
+            - !If
+              - UseTruefaceDash
+              - !Ref TruefaceDashPath
+              - !Ref AWS::NoValue
+            - !If
+              - UseRankOne
+              - !Ref RankOnePath
+              - !Ref AWS::NoValue
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: nginx-proxy
+          Environment:
+            - Name: NGINX_ENV_PATH
+              Value: /etc/nginx/discovery/nginx.env
+            - Name: HOST_TRUEFACE_SPOOF
+              Value: !Ref TruefaceSpoofPath
+            - Name: PORT_TRUEFACE_SPOOF
+              Value: '8085'
+            - Name: HOST_TRUEFACE_DASH
+              Value: !Ref TruefaceDashPath
+            - Name: PORT_TRUEFACE_DASH
+              Value: '5000'
+            - Name: HOST_RANK_ONE
+              Value: !Ref RankOnePath
+            - Name: PORT_RANK_ONE
+              Value: '8080'
+            - Name: ENABLE_TRUEFACE_SPOOF
+              Value: !If
+                - UseTruefaceSpoof
+                - '1'
+                - '0'
+            - Name: ENABLE_TRUEFACE_DASH
+              Value: !If
+                - UseTruefaceDash
+                - '1'
+                - '0'
+            - Name: ENABLE_RANK_ONE
+              Value: !If
+                - UseRankOne
+                - '1'
+                - '0'
+          MountPoints:
+            - ContainerPath: /etc/nginx/discovery
+              SourceVolume: discovery
+
+        - !If
+          - UseTruefaceSpoof
+          - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, truefaceSpoof], ":latest"]]
+            Essential: true
+            Cpu: 1024
+            Memory: 1024
+            Name: !Ref TruefaceSpoofPath
+            PortMappings:
+              - ContainerPort: 8085
+                HostPort: 0
+                Protocol: -1
+            LogConfiguration:
+              LogDriver: awslogs
+              Options:
+                awslogs-group: !Ref LogGroup
+                awslogs-region: !Ref AWS::Region
+                awslogs-stream-prefix: !Ref TruefaceSpoofPath
+          - !Ref "AWS::NoValue"
+
+        - !If
+          - UseTruefaceDash
+          - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, truefaceDash], ":latest"]]
+            Essential: true
+            Cpu: 512
+            Memory: 512
+            Name: !Ref TruefaceDashPath
+            PortMappings:
+              - ContainerPort: 5000
+                HostPort: 0
+                Protocol: -1
+            Links:
+              - !If
+                - UseTruefaceSpoof
+                - !Ref TruefaceSpoofPath
+                - !Ref "AWS::NoValue"
+            LogConfiguration:
+              LogDriver: awslogs
+              Options:
+                awslogs-group: !Ref LogGroup
+                awslogs-region: !Ref AWS::Region
+                awslogs-stream-prefix: !Ref TruefaceDashPath
+          - !Ref "AWS::NoValue"
+
+        - !If
+          - UseRankOne
+          - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, rankOne], ":latest"]]
+            Essential: true
+            Cpu: 1024
+            Memory: 1024
+            Name: !Ref RankOnePath
+            PortMappings:
+              - ContainerPort: 8080
+                HostPort: 0
+                Protocol: -1
+            LogConfiguration:
+              LogDriver: awslogs
+              Options:
+                awslogs-group: !Ref LogGroup
+                awslogs-region: !Ref AWS::Region
+                awslogs-stream-prefix: !Ref RankOnePath
+          - !Ref "AWS::NoValue"
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: 3
+
+  # Auto Scaling
+
+  # ServiceAutoScalingRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         Action:
+  #         - 'sts:AssumeRole'
+  #         Effect: Allow
+  #         Principal:
+  #           Service:
+  #           - application-autoscaling.amazonaws.com
+  #     Path: /
+  #     Policies:
+  #     - PolicyName: ecs-service-autoscaling
+  #       PolicyDocument:
+  #           Statement:
+  #             Effect: Allow
+  #             Action:
+  #             - application-autoscaling:*
+  #             - cloudwatch:DescribeAlarms
+  #             - cloudwatch:PutMetricAlarm
+  #             - ecs:DescribeServices
+  #             - ecs:UpdateService
+  #             Resource: "*"
+
+  # ServiceScalableTarget:
+  #   Type: AWS::ApplicationAutoScaling::ScalableTarget
+  #   Properties:
+  #     MaxCapacity: !Ref MaxCount
+  #     MinCapacity: !Ref DesiredCount
+  #     ResourceId: !Join
+  #         - /
+  #         - - service
+  #           - !Ref ECSCluster
+  #           - !GetAtt ECSService.Name
+  #     RoleARN: !Ref ServiceAutoScalingRole
+  #     ScalableDimension: ecs:service:DesiredCount
+  #     ServiceNamespace: ecs
+
+  # ServiceScaleOutPolicy:
+  #   Type : AWS::ApplicationAutoScaling::ScalingPolicy
+  #   Properties:
+  #     PolicyName: ServiceScaleOutPolicy
+  #     PolicyType: StepScaling
+  #     ScalingTargetId: !Ref ServiceScalableTarget
+  #     StepScalingPolicyConfiguration:
+  #       AdjustmentType: ChangeInCapacity
+  #       Cooldown: 60
+  #       MetricAggregationType: Average
+  #       StepAdjustments:
+  #       - MetricIntervalLowerBound: 0
+  #         ScalingAdjustment: 1
+
+  # ServiceScaleInPolicy:
+  #   Type : AWS::ApplicationAutoScaling::ScalingPolicy
+  #   Properties:
+  #     PolicyName: ServiceScaleInPolicy
+  #     PolicyType: StepScaling
+  #     ScalingTargetId: !Ref ServiceScalableTarget
+  #     StepScalingPolicyConfiguration:
+  #       AdjustmentType: ChangeInCapacity
+  #       Cooldown: 60
+  #       MetricAggregationType: Average
+  #       StepAdjustments:
+  #       - MetricIntervalUpperBound: 0
+  #         ScalingAdjustment: -1
+
+  # CPUScaleOutAlarm:
+  #   Type: AWS::CloudWatch::Alarm
+  #   Properties:
+  #     AlarmName: CPU utilization greater than 90%
+  #     AlarmDescription: Alarm if cpu utilization greater than 90% of reserved cpu
+  #     Namespace: AWS/ECS
+  #     MetricName: CPUUtilization
+  #     Dimensions:
+  #     - Name: ClusterName
+  #       Value: !Ref Cluster
+  #     - Name: ServiceName
+  #       Value: !GetAtt Service.Name
+  #     Statistic: Maximum
+  #     Period: '60'
+  #     EvaluationPeriods: '3'
+  #     Threshold: '90'
+  #     ComparisonOperator: GreaterThanThreshold
+  #     AlarmActions:
+  #     - !Ref ServiceScaleOutPolicy
+
+  # CPUScaleInAlarm:
+  #   Type: AWS::CloudWatch::Alarm
+  #   Properties:
+  #     AlarmName: CPU utilization less than 70%
+  #     AlarmDescription: Alarm if cpu utilization greater than 70% of reserved cpu
+  #     Namespace: AWS/ECS
+  #     MetricName: CPUUtilization
+  #     Dimensions:
+  #     - Name: ClusterName
+  #       Value: !Ref Cluster
+  #     - Name: ServiceName
+  #       Value: !GetAtt Service.Name
+  #     Statistic: Maximum
+  #     Period: '60'
+  #     EvaluationPeriods: '10'
+  #     Threshold: '70'
+  #     ComparisonOperator: LessThanThreshold
+  #     AlarmActions:
+  #     - !Ref ServiceScaleInPolicy
+
 Outputs:
 
   Cluster:
@@ -359,3 +817,7 @@ Outputs:
   AutoScalingGroup:
     Description: A reference to ECS AutoScaling Group Name
     Value: !Ref ECSAutoScalingGroup
+
+  ECSService:
+    Description: ECS service for KYC services
+    Value: !Ref ECSService

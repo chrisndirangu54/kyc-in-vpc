@@ -16,24 +16,28 @@ services:
       HOST_RANK_ONE: rank-one
       PORT_RANK_ONE: 5000
       ENABLE_RANK_ONE: '1'
-      API_KEY: ""
+      NGINX_ENV_PATH: /etc/nginx/discovery/nginx.env
+    volumes:
+      - ./discovery:/etc/nginx/discovery
 
-  trueface-spoof:
-    container_name: trueface_spoof_tradle_vpc
-    # build: './trueface-spoof'
-    image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:latest'
-    ports:
-      - 8085:8085
+      # API_KEY: ""
 
-  # trueface-dash:
-  #   container_name: trueface_dash_tradle_vpc
-  #   build: './trueface-dash'
-  #   # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-dash:latest'
+  # trueface-spoof:
+  #   container_name: trueface_spoof_tradle_vpc
+  #   # build: './trueface-spoof'
+  #   image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:latest'
   #   ports:
-  #     - 5000:5000
+  #     - 8085:8085
 
-  rank-one:
-    # container_name: rank_one_tradle_vpc
-    image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/roc-face:latest'
-    ports:
-      - 8080:8080
+  # # trueface-dash:
+  # #   container_name: trueface_dash_tradle_vpc
+  # #   build: './trueface-dash'
+  # #   # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-dash:latest'
+  # #   ports:
+  # #     - 5000:5000
+
+  # rank-one:
+  #   # container_name: rank_one_tradle_vpc
+  #   image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/roc-face:latest'
+  #   ports:
+  #     - 8080:8080

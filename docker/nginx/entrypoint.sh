@@ -2,7 +2,7 @@
 set -e
 
 envify() {
-  if [ -n "$2" ]
+  if [[ "$2" ]]
   then
     envsubst "`env | awk -F = '{printf \" $$%s\", $$1}'`" < "$1" > "$2"
   else
@@ -10,14 +10,14 @@ envify() {
   fi
 }
 
-if [ -n "$S3_PATH_TO_API_KEYS" ]
+if [[ "$NGINX_ENV_PATH" ]] && [[ -f "$NGINX_ENV_PATH" ]]
 then
-  echo "loading api key from $S3_PATH_TO_API_KEYS"
-  API_KEYS=$(aws s3 cp "s3://$S3_PATH_TO_API_KEYS" -)
-  export $(echo "$API_KEYS" | xargs)
-  # aws s3 cp $S3_PATH_TO_API_KEYS /etc/nginx/conf.d/template.conf
+  echo "loading api key from $NGINX_ENV_PATH"
+  export $(cat "$NGINX_ENV_PATH" | xargs)
+  # export $(aws s3 cp "s3://$NGINX_ENV_PATH" - | xargs)
+  # aws s3 cp $NGINX_ENV_PATH /etc/nginx/conf.d/template.conf
 else
-  echo "\$S3_PATH_TO_API_KEYS not set, did you mean for this API to be open to the internet?"
+  echo "\$NGINX_ENV_PATH not set or file doesn't exist, did you mean for this API to be open to the internet?"
 fi
 
 # replaces too many thing (everything with a dollar sign)
@@ -28,7 +28,7 @@ fi
 
 # COPY location.tmpl /etc/nginx/conf.d/template-location.conf
 
-if [ -n "$API_KEY" ]
+if [[ "$API_KEY" ]]
 then
   echo "API_KEY is set"
 else
