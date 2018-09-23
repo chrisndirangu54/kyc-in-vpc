@@ -32,9 +32,27 @@ usage() {
   exit 1
 }
 
+create_repo() {
+  REPO_NAME=$1
+  echo "Creating ECR repository $REPO_NAME"
+  aws ecr create-repository --repository-name $REPO_NAME --region $TO_REGION
+}
+
 copy_image() {
-  docker pull "$1"
-  docker push "$2"
+  NAME="$1"
+  FROM_REPO="$FROM_ACCOUNT.dkr.ecr.$FROM_REGION.amazonaws.com/$NAME"
+  TO_REPO="$TO_ACCOUNT.dkr.ecr.$TO_REGION.amazonaws.com/$NAME"
+
+  echo "will copy from $FROM_REPO to $TO_REPO"
+
+  `aws ecr get-login --no-include-email --region $FROM_REGION`
+
+  docker pull "$FROM_REPO"
+  docker tag "$FROM_REPO" "$TO_REPO"
+
+  `aws ecr get-login --no-include-email --region $TO_REGION`
+  create_repo "$NAME"
+  docker push "$TO_REPO"
 }
 
 while [[ "$#" > 0 ]]; do case $1 in
@@ -76,22 +94,17 @@ then
   usage "unable to deduce some options"
 fi
 
+if [[ $FROM_ACCOUNT == $TO_ACCOUNT && $FROM_REGION == $TO_REGION ]]
+then
+  usage "source and destination is the same! Be more specific please!"
+fi
+
 # convert to array
 IFS=',' read -r -a IMAGES <<< "$IMAGES"
 
-`aws ecr get-login --no-include-email`
-
 for name in "${IMAGES[@]}"
 do
-  FROM_REPO="$FROM_ACCOUNT.dkr.ecr.$FROM_REGION.amazonaws.com/$name"
-  TO_REPO="$TO_ACCOUNT.dkr.ecr.$TO_REGION.amazonaws.com/$name"
-  if [[ $FROM_REPO == $TO_REPO ]]
-  then
-    usage "source and destination is the same! Be more specific please!"
-  fi
-
-  echo "will copy from $FROM_REPO to $TO_REPO"
-  copy_image "$FROM_REPO" "$TO_REPO" &
+  copy_image "$name" &
 done
 
 wait
