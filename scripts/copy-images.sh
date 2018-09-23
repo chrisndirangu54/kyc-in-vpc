@@ -32,8 +32,28 @@ usage() {
   exit 1
 }
 
+require() {
+    command -v "$1" > /dev/null 2>&1 || {
+        echo "Some of the required software is not installed:"
+        echo "    please install $1" >&2;
+        exit 4;
+    }
+}
+
+get_repo_url() {
+  REPO_NAME=$1
+  OUT=$(aws ecr describe-repositories --repository-name=$REPO_NAME 2> /dev/null || echo "{}")
+  echo $OUT | jq -r ".repositories[0].repositoryUri"
+}
+
 create_repo() {
   REPO_NAME=$1
+  REPO_URL=$(get_repo_url $REPO_NAME)
+  if [ $REPO_URL != "null" ]; then
+    echo "Repository already exists"
+    return 0
+  fi
+
   echo "Creating ECR repository $REPO_NAME"
   aws ecr create-repository --repository-name $REPO_NAME --region $TO_REGION
 }
@@ -54,6 +74,8 @@ copy_image() {
   create_repo "$NAME"
   docker push "$TO_REPO"
 }
+
+require jq
 
 while [[ "$#" > 0 ]]; do case $1 in
   --from-account-id) FROM_ACCOUNT="$2"; shift;shift;;
