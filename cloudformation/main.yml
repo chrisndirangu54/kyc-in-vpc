@@ -6,8 +6,9 @@ Parameters:
     Type: String
     Default: ""
 
-  S3TemplatesPath:
+  S3TemplatesBaseUrl:
     Type: String
+    Default: https://tradle.io.s3.amazonaws.com/cf-templates/kyc-in-ecs
 
   # VPC
 
@@ -200,7 +201,7 @@ Resources:
   VPC:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/vpc.yml
+      TemplateURL: !Sub ${S3TemplatesBaseUrl}/vpc.yml
       Parameters:
         Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
         VpcCIDR: !Ref VpcCIDR
@@ -216,7 +217,7 @@ Resources:
   SecurityGroups:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/security-groups.yml
+      TemplateURL: !Sub ${S3TemplatesBaseUrl}/security-groups.yml
       Parameters:
         Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
         VPC: !GetAtt VPC.Outputs.VPC
@@ -226,7 +227,7 @@ Resources:
     Condition: SSHAccess
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/bastion.yml
+      TemplateURL: !Sub ${S3TemplatesBaseUrl}/bastion.yml
       Parameters:
         KeyName: !Ref KeyName
         Subnet: !GetAtt VPC.Outputs.PublicSubnet1
@@ -235,7 +236,7 @@ Resources:
   ALB:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/load-balancers.yml
+      TemplateURL: !Sub ${S3TemplatesBaseUrl}/load-balancers.yml
       Parameters:
         Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
         VPC: !GetAtt VPC.Outputs.VPC
@@ -245,7 +246,7 @@ Resources:
   ECS:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/ecs.yml
+      TemplateURL: !Sub ${S3TemplatesBaseUrl}/ecs.yml
       Parameters:
         Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
         VPC: !GetAtt VPC.Outputs.VPC
@@ -282,7 +283,7 @@ Resources:
   #   Type: AWS::CloudFormation::Stack
   #   DependsOn: VPC
   #   Properties:
-  #     TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/kyc.yml
+  #     TemplateURL: !Sub ${S3TemplatesBaseUrl}/kyc.yml
   #     Parameters:
   #       Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
   #       VPC: !GetAtt VPC.Outputs.VPC
@@ -305,7 +306,7 @@ Resources:
   #   Type: AWS::CloudFormation::Stack
   #   Condition: RegisterDNS
   #   Properties:
-  #     TemplateURL: !Sub https://s3.amazonaws.com/${S3TemplatesPath}/dns.yml
+  #     TemplateURL: !Sub ${S3TemplatesBaseUrl}/dns.yml
   #     Parameters:
   #       DNSName: !Ref DNSName
   #       AliasedHostedZoneId: !GetAtt ALB.Outputs.CanonicalHostedZoneNameID
