@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "InstanceType",
-    "ParameterValue": "t2.medium"
+    "ParameterValue": "m5.xlarge"
   },
   {
     "ParameterKey": "DesiredTaskCount",
@@ -9,7 +9,7 @@
   },
   {
     "ParameterKey": "EnableTruefaceSpoof",
-    "ParameterValue": "false"
+    "ParameterValue": "true"
   },
   {
     "ParameterKey": "EnableRankOne",

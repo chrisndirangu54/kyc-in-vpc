@@ -229,8 +229,8 @@ Resources:
           - UseTruefaceSpoof
           - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, truefaceSpoof], ":latest"]]
             Essential: true
-            Cpu: 512
-            Memory: 512
+            Cpu: 1024
+            Memory: 1024
             Name: !Ref TruefaceSpoofPath
             PortMappings:
               - ContainerPort: 8085
@@ -272,8 +272,8 @@ Resources:
           - UseRankOne
           - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, rankOne], ":latest"]]
             Essential: true
-            Cpu: 512
-            Memory: 512
+            Cpu: 1024
+            Memory: 1024
             Name: !Ref RankOnePath
             PortMappings:
               - ContainerPort: 8080
