@@ -21,17 +21,17 @@ const ctx = {
   dnsName: 'ethmainnet2.mvayngrib.com',
 }
 
-const run = async op => {
+const run = async opts => {
   const [ip] = await ec.getEC2PrivateIps(ctx)
-  if (op.toLowerCase() === 'delete') {
+  if (opts.delete) {
     await dns.deleteARecord({ ...ctx, ip })
   } else {
     await dns.upsertARecord({ ...ctx, ip })
   }
 }
 
-const create = () => run('Create')
-const del = () => run('Delete')
+const create = () => run({ create: true })
+const del = () => run({ delete: true })
 const op = del
 
 op().catch(console.error)
