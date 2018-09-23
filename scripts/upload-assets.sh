@@ -5,15 +5,12 @@ set -x
 
 source "$(dirname $0)/env.sh"
 
-if [[ ! "$BUCKET" ]]
+if [[ ! "$UPLOAD_ASSETS_S3_PATH" ]]
 then
   exit 0
 fi
 
-CUR_DIR=$(pwd)
-cd ./service && zip -r "$CUR_DIR/lambda.zip" . && cd "$CUR_DIR"
-aws s3 cp lambda.zip "s3://$BUCKET/$STACK_NAME/"
 aws s3 cp \
-  --recursive "$CUR_DIR/cloudformation/" "s3://$BUCKET/$STACK_NAME/" \
+  --recursive "$(pwd)/cloudformation/" "s3://$UPLOAD_ASSETS_S3_PATH/" \
   --exclude "*" \
   --include "*.yml"
