@@ -11,7 +11,7 @@ PARAMS_FILE=${1-"../cloudformation/stack-parameters.json"}
 "$(dirname $0)/validate-templates.sh"
 "$(dirname $0)/upload-assets.sh"
 
-PARAMETERS=$(node scripts/build-params.js "$PARAMS_FILE" "$BUCKET/$STACK_NAME")
+PARAMETERS=$(node scripts/build-params.js "$PARAMS_FILE" "$UPLOAD_ASSETS_S3_PATH")
 CUR_DIR=$(pwd)
 
 EXISTING_STACKS=$(aws cloudformation describe-stacks \

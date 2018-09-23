@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-"$(dirname "$0")/build_and_upload.sh" tradle-kyc-nginx-proxy "$(dirname "$0")/../docker/nginx"
+"$(dirname "$0")/build-and-upload.sh" tradle-kyc-nginx-proxy "$(dirname "$0")/../docker/nginx"

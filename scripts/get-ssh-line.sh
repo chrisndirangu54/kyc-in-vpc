@@ -12,7 +12,7 @@ SSH_KEY_PATH="$1"
 BASTION=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
   | jq -r '.Stacks[].Outputs[] | select(.OutputKey == "BastionPublicIP").OutputValue')
 
-TARGET=$(./scripts/get-container-instance-ip.sh)
+TARGET=$("$(dirname $0)/get-container-instance-ip.sh")
 
 if [ -n "$SSH_KEY_PATH" ];
 then

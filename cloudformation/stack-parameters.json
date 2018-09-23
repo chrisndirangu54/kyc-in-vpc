@@ -1,13 +1,5 @@
 [
   {
-    "ParameterKey": "InstanceType",
-    "ParameterValue": "m5.xlarge"
-  },
-  {
-    "ParameterKey": "DesiredTaskCount",
-    "ParameterValue": "1"
-  },
-  {
     "ParameterKey": "EnableTruefaceSpoof",
     "ParameterValue": "true"
   },
