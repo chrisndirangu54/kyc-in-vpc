@@ -6,4 +6,4 @@ set -euo pipefail
 source "$(dirname $0)/env.sh"
 
 aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
-  | jq -r '.Stacks[].Outputs[] | select(.OutputKey == "EthDNSName").OutputValue'
+  | jq -r '.Stacks[].Outputs[] | select(.OutputKey == "LoadBalancerDNSName").OutputValue'
