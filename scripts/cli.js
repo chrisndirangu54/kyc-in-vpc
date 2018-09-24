@@ -103,7 +103,7 @@ yargs
         default: 'us-east-1',
       },
       repos: {
-        default: ['trueface-spoof', 'roc-face', 'tradle-kyc-nginx-proxy'],
+        default: ['trueface-spoof', 'rank-one', 'tradle-kyc-nginx-proxy'],
       },
       account: {
         type: 'string',

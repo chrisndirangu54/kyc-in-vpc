@@ -98,7 +98,7 @@ TO_ACCOUNT=$(aws --profile $TO_PROFILE sts get-caller-identity --output text --q
 
 if [[ ! $IMAGES ]]
 then
-  IMAGES="tradle-kyc-nginx-proxy,trueface-spoof,roc-face"
+  IMAGES="tradle-kyc-nginx-proxy,trueface-spoof,rank-one"
 fi
 
 if [[ ! $FROM_REGION ]]

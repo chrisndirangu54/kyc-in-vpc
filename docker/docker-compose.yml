@@ -38,6 +38,6 @@ services:
 
   # rank-one:
   #   # container_name: rank_one_tradle_vpc
-  #   image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/roc-face:latest'
+  #   image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/rank-one:latest'
   #   ports:
   #     - 8080:8080

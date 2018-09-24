@@ -125,7 +125,7 @@ Mappings:
       nginx: tradle-kyc-nginx-proxy
       truefaceSpoof: trueface-spoof
       truefaceDash: trueface-dash
-      rankOne: roc-face
+      rankOne: rank-one
 
 Resources:
 
