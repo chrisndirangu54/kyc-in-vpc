@@ -498,8 +498,8 @@ Resources:
     Properties:
       DeploymentConfiguration:
         MaximumPercent: 200
-        # no interruption in service
-        MinimumHealthyPercent: 100
+        # for no interruption in service, set 100
+        MinimumHealthyPercent: 0
 
       # custom name makes it hard to update the stack, giving errors like this:
       #

@@ -30,11 +30,11 @@ const build = async paramsFile => {
   const tDir = getParam('S3TemplatesBaseUrl')
   if (!tDir) {
     const [bucket, path] = splitOnIdx(templateDir, templateDir.indexOf('/'))
-    debugger
+    const url = `https://${bucket}.s3.amazonaws.com/${path.slice(1)}`
     params.push({
       ParameterKey: 'S3TemplatesBaseUrl',
       // trim begin/end slashes
-      ParameterValue: `https://${bucket}.s3.amazonaws.com/${path.slice(1)}`
+      ParameterValue: url
     })
   }
 
