@@ -430,11 +430,11 @@ Resources:
                   "services": {
                     "trueface": {
                       "enabled": ${EnableTruefaceSpoof},
-                      "path": "${TruefaceSpoofPath}",
+                      "path": "${TruefaceSpoofPath}"
                     },
                     "rankone": {
                       "enabled": ${EnableRankOne},
-                      "path": "${RankOnePath}",
+                      "path": "${RankOnePath}"
                     }
                   }
                 }
