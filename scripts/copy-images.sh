@@ -4,8 +4,10 @@ set -euo pipefail
 
 CLEAR='\033[0m'
 RED='\033[0;31m'
+FROM_PROFILE=""
 FROM_ACCOUNT=""
 FROM_REGION=""
+TO_PROFILE=""
 TO_ACCOUNT=""
 TO_REGION=""
 IMAGES=""
@@ -16,16 +18,16 @@ usage() {
   fi
 
   echo "Usage: $0 --from-account-id awsAccountId --from-region us-east-1 --to-account-id awsAccountId --to-region ap-southeast-1 --images image1,image2,image3"
-  echo "  --from-account-id    account id to source ECR images from"
+  echo "  --from-profile       local AWS profile to use to pull ECR images"
   echo "  --from-region        region source ECR images are in"
-  echo "  --to-account-id      account id to copy ECR images to"
+  echo "  --to-profile         local AWS profile to use to push ECR images"
   echo "  --to-region          region copy ECR images to"
   echo "  --images             images names comma-delimited list"
   echo ""
   echo "Example: $0 \
-    --from-account-id 123 \
+    --from-profile myprofile \
     --from-region us-east-1 \
-    --to-account-id 456 \
+    --to-profile myotherprofile \
     --to-region ap-southeast-1 \
     --images repo1,repo2,repo3"
 
@@ -42,7 +44,7 @@ require() {
 
 get_repo_url() {
   REPO_NAME=$1
-  OUT=$(aws ecr describe-repositories --repository-name=$REPO_NAME 2> /dev/null || echo "{}")
+  OUT=$(aws --profile "$TO_PROFILE" ecr describe-repositories --repository-name=$REPO_NAME 2> /dev/null || echo "{}")
   echo $OUT | jq -r ".repositories[0].repositoryUri"
 }
 
@@ -65,12 +67,12 @@ copy_image() {
 
   echo "will copy from $FROM_REPO to $TO_REPO"
 
-  `aws ecr get-login --no-include-email --region $FROM_REGION`
+  `aws --profile "$FROM_PROFILE" ecr get-login --no-include-email --region $FROM_REGION`
 
   docker pull "$FROM_REPO"
   docker tag "$FROM_REPO" "$TO_REPO"
 
-  `aws ecr get-login --no-include-email --region $TO_REGION`
+  `aws  --profile "$TO_PROFILE" ecr get-login --no-include-email --region $TO_REGION`
   create_repo "$NAME"
   docker push "$TO_REPO"
 }
@@ -78,23 +80,21 @@ copy_image() {
 require jq
 
 while [[ "$#" > 0 ]]; do case $1 in
-  --from-account-id) FROM_ACCOUNT="$2"; shift;shift;;
+  --from-profile) FROM_PROFILE="$2"; shift;shift;;
   --from-region) FROM_REGION="$2"; shift;shift;;
-  --to-account-id) TO_ACCOUNT="$2"; shift;shift;;
+  --to-profile) TO_PROFILE="$2"; shift;shift;;
   --to-region) TO_REGION="$2"; shift;shift;;
   --images) IMAGES="$2"; shift;shift;;
   *) usage "Unknown parameter passed: $1";;
 esac; done
 
-if [[ ! $FROM_ACCOUNT ]]
+if [[ ! $FROM_PROFILE || ! $TO_PROFILE ]]
 then
-  FROM_ACCOUNT=$(aws sts get-caller-identity --output text --query 'Account')
+  usage "expected --from-profile and --to-profile"
 fi
 
-if [[ ! $TO_ACCOUNT ]]
-then
-  TO_ACCOUNT="$FROM_ACCOUNT"
-fi
+FROM_ACCOUNT=$(aws --profile $FROM_PROFILE sts get-caller-identity --output text --query 'Account')
+TO_ACCOUNT=$(aws --profile $TO_PROFILE sts get-caller-identity --output text --query 'Account')
 
 if [[ ! $IMAGES ]]
 then
@@ -126,7 +126,5 @@ IFS=',' read -r -a IMAGES <<< "$IMAGES"
 
 for name in "${IMAGES[@]}"
 do
-  copy_image "$name" &
+  copy_image "$name"
 done
-
-wait
