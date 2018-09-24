@@ -5,6 +5,7 @@ set -x
 
 source "$(dirname $0)/env.sh"
 
+STACK_NAME=${1-"$STACK_NAME"}
 OUTPUTS=$(aws --profile "$AWS_PROFILE" cloudformation describe-stacks \
   --stack-name "$STACK_NAME" | jq -r .Stacks[].Outputs)
 
