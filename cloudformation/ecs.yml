@@ -399,16 +399,29 @@ Resources:
               owner: root
               group: root
               content: !Sub |
+                #!/bin/bash
+
                 set -x
                 set -euo pipefail
 
                 echo "generating discovery & credentials"
 
-                API_KEY=$(openssl rand -base64 40)
+                if [[ -f /data/discovery/nginx.env ]]
+                then
+                  export $(cat "$NGINX_ENV_PATH" | xargs)
+                fi
+
+                if [[ "$API_KEY" ]]
+                then
+                  echo "api key already exists"
+                else
+                  echo "generating a new api key"
+                  API_KEY=$(openssl rand -base64 40)
+                  echo -e "API_KEY=\"$API_KEY\"" > /data/discovery/nginx.env
+                fi
 
                 mkdir -p /data/discovery/
                 # see kyc.yml for how it's used
-                echo -e "API_KEY=\"$API_KEY\"" >> /data/discovery/nginx.env
 
                 cat <<EOF > /data/discovery/ecs-services.json
                 {
