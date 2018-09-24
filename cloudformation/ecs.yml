@@ -404,6 +404,9 @@ Resources:
                 set -x
                 set -euo pipefail
 
+                API_KEY=""
+                NGINX_ENV_PATH=""
+
                 echo "generating discovery & credentials"
 
                 if [[ -f /data/discovery/nginx.env ]]
