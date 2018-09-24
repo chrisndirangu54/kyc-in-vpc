@@ -354,8 +354,10 @@ Outputs:
         - !Ref RankOnePath
 
   BastionHost:
+    Condition: SSHAccess
     Description: Bastion host, to allow SSH'ing into container instances
     Value: !GetAtt BastionHost.Outputs.PublicDNSName
 
   BastionPublicIP:
+    Condition: SSHAccess
     Value: !GetAtt BastionHost.Outputs.PublicIP
