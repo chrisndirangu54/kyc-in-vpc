@@ -17,7 +17,7 @@ usage() {
     echo -e "${RED}$1${CLEAR}\n";
   fi
 
-  echo "Usage: $0 --from-account-id awsAccountId --from-region us-east-1 --to-account-id awsAccountId --to-region ap-southeast-1 --images image1,image2,image3"
+  echo "Usage: $0 --from-profile awsAccountId --from-region us-east-1 --to-profile awsAccountId --to-region ap-southeast-1 --images image1,image2,image3"
   echo "  --from-profile       local AWS profile to use to pull ECR images"
   echo "  --from-region        region source ECR images are in"
   echo "  --to-profile         local AWS profile to use to push ECR images"
