@@ -8,12 +8,12 @@ source "$(dirname $0)/env.sh"
 # relative to build-params.js script
 PARAMS_FILE=${1-"../cloudformation/stack-parameters.json"}
 
+CF_DIR="$(dirname $0)/../cloudformation"
+
 "$(dirname $0)/validate-templates.sh"
 "$(dirname $0)/upload-assets.sh"
 
 PARAMETERS=$(node scripts/build-params.js "$PARAMS_FILE" "$UPLOAD_ASSETS_S3_PATH")
-CUR_DIR=$(pwd)
-
 EXISTING_STACKS=$(aws cloudformation describe-stacks \
   --stack-name "$STACK_NAME" || echo '{"Stacks": []}')
 
@@ -27,7 +27,7 @@ then
   echo 'creating stack!'
   aws cloudformation create-stack \
     --stack-name "$STACK_NAME" \
-    --template-body "file://$CUR_DIR/cloudformation/main.yml" \
+    --template-body "file://$CF_DIR/main.yml" \
     --parameters "$PARAMETERS" \
     --capabilities CAPABILITY_NAMED_IAM \
     --disable-rollback \
@@ -40,7 +40,7 @@ else
   echo "creating stack $STACK_NAME"
   aws cloudformation update-stack \
     --stack-name "$STACK_NAME" \
-    --template-body "file://$CUR_DIR/cloudformation/main.yml" \
+    --template-body "file://$CF_DIR/main.yml" \
     --parameters "$PARAMETERS" \
     --capabilities CAPABILITY_NAMED_IAM
 

@@ -22,25 +22,19 @@ const loadEnv = () => fs.readFileSync(path.join(__dirname, 'env.sh'), { encoding
     return map
   }, {})
 
+const splitOnIdx = (str, idx) => ([str.slice(0, idx), str.slice(idx)])
+
 const build = async paramsFile => {
   const params = require(paramsFile).slice()
   const getParam = key => params.find(p => p.ParameterKey === key)
-  // const dnsParam = getParam('DNSName')
-  // if (!dnsParam) {
-  //   params.push({
-  //     ParameterKey: 'DNSName',
-  //     ParameterValue: `eth-${NETWORK}.mvayngrib.com`
-  //   })
-  // }
-
-  const tDir = getParam('S3TemplatesPath')
+  const tDir = getParam('S3TemplatesBaseUrl')
   if (!tDir) {
+    const [bucket, path] = splitOnIdx(templateDir, templateDir.indexOf('/'))
+    debugger
     params.push({
-      ParameterKey: 'S3TemplatesPath',
+      ParameterKey: 'S3TemplatesBaseUrl',
       // trim begin/end slashes
-      ParameterValue: templateDir
-        .replace(/^[/]+/, '')
-        .replace(/[/]+$/, '')
+      ParameterValue: `https://${bucket}.s3.amazonaws.com/${path.slice(1)}`
     })
   }
 
