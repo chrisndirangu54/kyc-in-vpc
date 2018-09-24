@@ -441,7 +441,9 @@ Resources:
                 EOF
 
                 echo "writing discovery + credentials to s3 path: ${S3PathToWriteDiscovery}"
-                aws s3 cp /data/discovery/ecs-services.json "s3://${S3PathToWriteDiscovery}"
+                aws s3 cp --content-type 'application/json' \
+                  /data/discovery/ecs-services.json \
+                  "s3://${S3PathToWriteDiscovery}"
 
           services:
             sysvinit:
