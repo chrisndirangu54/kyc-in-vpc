@@ -585,7 +585,7 @@ Resources:
       ContainerDefinitions:
         - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, nginx], ":latest"]]
           Essential: true
-          Cpu: 256
+          Cpu: 128
           Memory: 256
           Name: nginx-proxy
           PortMappings:
@@ -648,7 +648,7 @@ Resources:
           - UseTruefaceSpoof
           - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, truefaceSpoof], ":latest"]]
             Essential: true
-            Cpu: 1024
+            Cpu: 256
             Memory: 1024
             Name: !Ref TruefaceSpoofPath
             PortMappings:
@@ -667,7 +667,7 @@ Resources:
           - UseTruefaceDash
           - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, truefaceDash], ":latest"]]
             Essential: true
-            Cpu: 512
+            Cpu: 256
             Memory: 512
             Name: !Ref TruefaceDashPath
             PortMappings:
@@ -691,7 +691,7 @@ Resources:
           - UseRankOne
           - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, rankOne], ":latest"]]
             Essential: true
-            Cpu: 1024
+            Cpu: 256
             Memory: 1024
             Name: !Ref RankOnePath
             PortMappings:
