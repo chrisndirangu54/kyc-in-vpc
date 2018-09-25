@@ -108,14 +108,6 @@ Parameters:
       - "true"
       - "false"
 
-  EnableTruefaceDash:
-    Type: String
-    Description: enable TrueFace dashboard
-    Default: "false"
-    AllowedValues:
-      - "true"
-      - "false"
-
   EnableRankOne:
     Type: String
     Description: enable RankOne service
@@ -123,6 +115,18 @@ Parameters:
     AllowedValues:
       - "true"
       - "false"
+
+  TruefaceSpoofImage:
+    Type: String
+    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:latest
+
+  RankOneImage:
+    Type: String
+    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/rank-one:latest
+
+  NginxImage:
+    Type: String
+    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/tradle-kyc-nginx-proxy:latest
 
   TruefaceSpoofPath:
     Type: String
@@ -132,15 +136,6 @@ Parameters:
     AllowedValues:
       - 'trueface-spoof'
     ConstraintDescription: "path not editable at this time, use value: trueface-spoof"
-
-  TruefaceDashPath:
-    Type: String
-    Description: root path segement of TrueFace dashboard
-    Default: "trueface-dash"
-    # AllowedPattern: "^[a-zA-Z0-9\\-]+$"
-    AllowedValues:
-      - 'trueface-dash'
-    ConstraintDescription: "path not editable at this time, use value: trueface-dash"
 
   RankOnePath:
     Type: String
@@ -194,7 +189,6 @@ Conditions:
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
   # RegisterDNS: !Not [!Equals [ !Ref DNSName, ""]]
   UseTruefaceSpoof: !Equals [!Ref EnableTruefaceSpoof, "true"]
-  UseTruefaceDash: !Equals [!Ref EnableTruefaceDash, "true"]
   UseRankOne: !Equals [!Ref EnableRankOne, "true"]
 
 Resources:
@@ -264,10 +258,11 @@ Resources:
         DesiredTaskCount: !Ref DesiredTaskCount
         ALBListener: !GetAtt ALB.Outputs.Listener
         EnableTruefaceSpoof: !Ref EnableTruefaceSpoof
-        EnableTruefaceDash: !Ref EnableTruefaceDash
         EnableRankOne: !Ref EnableRankOne
+        TruefaceSpoofImage: !Ref TruefaceSpoofImage
+        RankOneImage: !Ref RankOneImage
+        NginxImage: !Ref NginxImage
         TruefaceSpoofPath: 'trueface-spoof'
-        TruefaceDashPath: 'trueface-dash'
         RankOnePath: 'rank-one'
 
   # KYC sub-stack was collapsed into ECS because of this:
@@ -336,14 +331,6 @@ Outputs:
       - - !GetAtt ALB.Outputs.LoadBalancerUrl
         - !Ref TruefaceSpoofPath
         - "spdetect"
-
-  TruefaceDashApiUrl:
-    Condition: UseTruefaceDash
-    Description: TrueFace dashboard base url
-    Value: !Join
-      - "/"
-      - - !GetAtt ALB.Outputs.LoadBalancerUrl
-        - !Ref TruefaceDashPath
 
   RankOneApiUrl:
     Condition: UseRankOne

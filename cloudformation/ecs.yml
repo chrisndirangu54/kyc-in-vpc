@@ -57,20 +57,29 @@ Parameters:
     Description: Application Load Balancer listener to register with
     Type: String
 
-  EnableTruefaceSpoof:
-    Type: String
+  # EnableTruefaceDash:
+  #   Type: String
 
-  EnableTruefaceDash:
+  EnableTruefaceSpoof:
     Type: String
 
   EnableRankOne:
     Type: String
 
+  TruefaceSpoofImage:
+    Type: String
+
+  RankOneImage:
+    Type: String
+
+  NginxImage:
+    Type: String
+
   TruefaceSpoofPath:
     Type: String
 
-  TruefaceDashPath:
-    Type: String
+  # TruefaceDashPath:
+  #   Type: String
 
   RankOnePath:
     Type: String
@@ -80,7 +89,7 @@ Conditions:
   NeedsVolume: !Not [!Equals [ !Ref VolumeType, ""]]
   ShouldSaveDiscovery: !Not [!Equals [ !Ref S3PathToWriteDiscovery, ""]]
   UseTruefaceSpoof: !Equals [!Ref EnableTruefaceSpoof, "true"]
-  UseTruefaceDash: !Equals [!Ref EnableTruefaceDash, "true"]
+  # UseTruefaceDash: !Equals [!Ref EnableTruefaceDash, "true"]
   UseRankOne: !Equals [!Ref EnableRankOne, "true"]
 
 Mappings:
@@ -124,7 +133,7 @@ Mappings:
     ecr:
       nginx: tradle-kyc-nginx-proxy
       truefaceSpoof: trueface-spoof
-      truefaceDash: trueface-dash
+      # truefaceDash: trueface-dash
       rankOne: rank-one
 
 Resources:
@@ -583,7 +592,7 @@ Resources:
           Name: discovery
 
       ContainerDefinitions:
-        - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, nginx], ":latest"]]
+        - Image: !Ref NginxImage
           Essential: true
           Cpu: 128
           Memory: 256
@@ -596,10 +605,10 @@ Resources:
               - UseTruefaceSpoof
               - !Ref TruefaceSpoofPath
               - !Ref AWS::NoValue
-            - !If
-              - UseTruefaceDash
-              - !Ref TruefaceDashPath
-              - !Ref AWS::NoValue
+            # - !If
+            #   - UseTruefaceDash
+            #   - !Ref TruefaceDashPath
+            #   - !Ref AWS::NoValue
             - !If
               - UseRankOne
               - !Ref RankOnePath
@@ -617,10 +626,10 @@ Resources:
               Value: !Ref TruefaceSpoofPath
             - Name: PORT_TRUEFACE_SPOOF
               Value: '8085'
-            - Name: HOST_TRUEFACE_DASH
-              Value: !Ref TruefaceDashPath
-            - Name: PORT_TRUEFACE_DASH
-              Value: '5000'
+            # - Name: HOST_TRUEFACE_DASH
+            #   Value: !Ref TruefaceDashPath
+            # - Name: PORT_TRUEFACE_DASH
+            #   Value: '5000'
             - Name: HOST_RANK_ONE
               Value: !Ref RankOnePath
             - Name: PORT_RANK_ONE
@@ -630,11 +639,11 @@ Resources:
                 - UseTruefaceSpoof
                 - '1'
                 - '0'
-            - Name: ENABLE_TRUEFACE_DASH
-              Value: !If
-                - UseTruefaceDash
-                - '1'
-                - '0'
+            # - Name: ENABLE_TRUEFACE_DASH
+            #   Value: !If
+            #     - UseTruefaceDash
+            #     - '1'
+            #     - '0'
             - Name: ENABLE_RANK_ONE
               Value: !If
                 - UseRankOne
@@ -646,7 +655,7 @@ Resources:
 
         - !If
           - UseTruefaceSpoof
-          - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, truefaceSpoof], ":latest"]]
+          - Image: !Ref TruefaceSpoofImage
             Essential: true
             Cpu: 256
             Memory: 1024
@@ -663,33 +672,33 @@ Resources:
                 awslogs-stream-prefix: !Ref TruefaceSpoofPath
           - !Ref "AWS::NoValue"
 
-        - !If
-          - UseTruefaceDash
-          - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, truefaceDash], ":latest"]]
-            Essential: true
-            Cpu: 256
-            Memory: 512
-            Name: !Ref TruefaceDashPath
-            PortMappings:
-              - ContainerPort: 5000
-                HostPort: 0
-                Protocol: -1
-            Links:
-              - !If
-                - UseTruefaceSpoof
-                - !Ref TruefaceSpoofPath
-                - !Ref "AWS::NoValue"
-            LogConfiguration:
-              LogDriver: awslogs
-              Options:
-                awslogs-group: !Ref LogGroup
-                awslogs-region: !Ref AWS::Region
-                awslogs-stream-prefix: !Ref TruefaceDashPath
-          - !Ref "AWS::NoValue"
+        # - !If
+        #   - UseTruefaceDash
+        #   - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, truefaceDash], ":latest"]]
+        #     Essential: true
+        #     Cpu: 256
+        #     Memory: 512
+        #     Name: !Ref TruefaceDashPath
+        #     PortMappings:
+        #       - ContainerPort: 5000
+        #         HostPort: 0
+        #         Protocol: -1
+        #     Links:
+        #       - !If
+        #         - UseTruefaceSpoof
+        #         - !Ref TruefaceSpoofPath
+        #         - !Ref "AWS::NoValue"
+        #     LogConfiguration:
+        #       LogDriver: awslogs
+        #       Options:
+        #         awslogs-group: !Ref LogGroup
+        #         awslogs-region: !Ref AWS::Region
+        #         awslogs-stream-prefix: !Ref TruefaceDashPath
+        #   - !Ref "AWS::NoValue"
 
         - !If
           - UseRankOne
-          - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, rankOne], ":latest"]]
+          - Image: !Ref RankOneImage
             Essential: true
             Cpu: 256
             Memory: 1024
