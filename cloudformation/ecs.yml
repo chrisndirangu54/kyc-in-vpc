@@ -438,7 +438,7 @@ Resources:
                 cat <<EOF > /data/discovery/ecs-services.json
                 {
                   "apiKey": "$API_KEY",
-                  "apiUrl": "${ALBUrl}",
+                  "apiUrl": "http://${ALBUrl}",
                   "services": {
                     "trueface": {
                       "enabled": ${EnableTruefaceSpoof},
