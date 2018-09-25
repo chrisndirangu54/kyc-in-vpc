@@ -3,6 +3,7 @@
 const AWS = require('aws-sdk')
 const yargs = require('yargs')
 const cloneDeep = require('lodash/cloneDeep')
+const log = (...args) => console.log(...args)
 
 const BASE_POLICY = {
   "Version": "2008-10-17",
