@@ -228,9 +228,11 @@ Resources:
           Value: !Sub ${Namespace}-ecs-instance
           PropagateAtLaunch: true
     CreationPolicy:
+      MinSuccessfulInstancesPercent: 33 # at least 1 instance
       ResourceSignal:
         Timeout: PT20M
     UpdatePolicy:
+      MinSuccessfulInstancesPercent: 33 # at least 1 instance
       AutoScalingRollingUpdate:
         MinInstancesInService: 1
         MaxBatchSize: 1
