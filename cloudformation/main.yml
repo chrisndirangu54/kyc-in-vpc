@@ -27,6 +27,11 @@ Parameters:
     Type: String
     Default: 10.0.11.0/24
 
+  PublicSubnet3CIDR:
+    Description: IP range (CIDR notation) for the public subnet in the third Availability Zone
+    Type: String
+    Default: 10.0.12.0/24
+
   PrivateSubnet1CIDR:
     Description: IP range (CIDR notation) for the private subnet in the first Availability Zone
     Type: String
@@ -36,6 +41,11 @@ Parameters:
     Description: IP range (CIDR notation) for the private subnet in the second Availability Zone
     Type: String
     Default: 10.0.21.0/24
+
+  PrivateSubnet3CIDR:
+    Description: IP range (CIDR notation) for the private subnet in the third Availability Zone
+    Type: String
+    Default: 10.0.22.0/24
 
   # ECS
 
@@ -201,8 +211,10 @@ Resources:
         VpcCIDR: !Ref VpcCIDR
         PublicSubnet1CIDR: !Ref PublicSubnet1CIDR
         PublicSubnet2CIDR: !Ref PublicSubnet2CIDR
+        PublicSubnet3CIDR: !Ref PublicSubnet3CIDR
         PrivateSubnet1CIDR: !Ref PrivateSubnet1CIDR
         PrivateSubnet2CIDR: !Ref PrivateSubnet2CIDR
+        PrivateSubnet3CIDR: !Ref PrivateSubnet3CIDR
         EnableSSHAccess: !If
           - SSHAccess
           - "true"
@@ -247,6 +259,7 @@ Resources:
         # ECSAMI: !Ref ECSAMI
         SecurityGroup: !GetAtt SecurityGroups.Outputs.ECSSecurityGroup
         Subnets: !GetAtt VPC.Outputs.PrivateSubnets
+        AvailabilityZones: !GetAtt VPC.Outputs.AvailabilityZones
         InstanceType: !Ref InstanceType
         VolumeSize: !Ref VolumeSize
         VolumeType: !Ref VolumeType

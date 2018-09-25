@@ -19,6 +19,9 @@ Parameters:
     Description: subnets to run ECS service in
     Type: List<AWS::EC2::Subnet::Id>
 
+  AvailabilityZones:
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+
   InstanceType:
     Type: String
     Description: ECS instance type
@@ -214,7 +217,7 @@ Resources:
   ECSAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      # AvailabilityZones: !Ref AvailabilityZones
+      AvailabilityZones: !Ref AvailabilityZones
       LaunchConfigurationName: !Ref ECSLaunchConfiguration
       VPCZoneIdentifier: !Ref Subnets
       MinSize: 1
@@ -226,12 +229,12 @@ Resources:
           PropagateAtLaunch: true
     CreationPolicy:
       ResourceSignal:
-        Timeout: PT15M
+        Timeout: PT20M
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: 1
         MaxBatchSize: 1
-        PauseTime: PT10M
+        PauseTime: PT15M
         SuspendProcesses:
           - HealthCheck
           - ReplaceUnhealthy
