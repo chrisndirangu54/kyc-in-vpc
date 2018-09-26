@@ -17,34 +17,46 @@ Parameters:
     Type: String
     Default: 10.0.0.0/16
 
+  AZ1:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Description: 1st availability zone
+
+  AZ2:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Description: 2nd availability zone
+
+  AZ3:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Description: 3rd availability zone
+
   PublicSubnet1CIDR:
-    Description: IP range (CIDR notation) for the public subnet in the first Availability Zone
     Type: String
+    Description: IP range (CIDR notation) for the public subnet in the first Availability Zone
     Default: 10.0.10.0/24
 
   PublicSubnet2CIDR:
-    Description: IP range (CIDR notation) for the public subnet in the second Availability Zone
     Type: String
+    Description: IP range (CIDR notation) for the public subnet in the second Availability Zone
     Default: 10.0.11.0/24
 
   PublicSubnet3CIDR:
-    Description: IP range (CIDR notation) for the public subnet in the third Availability Zone
     Type: String
+    Description: IP range (CIDR notation) for the public subnet in the third Availability Zone
     Default: 10.0.12.0/24
 
   PrivateSubnet1CIDR:
-    Description: IP range (CIDR notation) for the private subnet in the first Availability Zone
     Type: String
+    Description: IP range (CIDR notation) for the private subnet in the first Availability Zone
     Default: 10.0.20.0/24
 
   PrivateSubnet2CIDR:
-    Description: IP range (CIDR notation) for the private subnet in the second Availability Zone
     Type: String
+    Description: IP range (CIDR notation) for the private subnet in the second Availability Zone
     Default: 10.0.21.0/24
 
   PrivateSubnet3CIDR:
-    Description: IP range (CIDR notation) for the private subnet in the third Availability Zone
     Type: String
+    Description: IP range (CIDR notation) for the private subnet in the third Availability Zone
     Default: 10.0.22.0/24
 
   # ECS
@@ -209,6 +221,9 @@ Resources:
       Parameters:
         Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
         VpcCIDR: !Ref VpcCIDR
+        AZ1: !Ref AZ1
+        AZ2: !Ref AZ2
+        AZ3: !Ref AZ3
         PublicSubnet1CIDR: !Ref PublicSubnet1CIDR
         PublicSubnet2CIDR: !Ref PublicSubnet2CIDR
         PublicSubnet3CIDR: !Ref PublicSubnet3CIDR
@@ -361,3 +376,10 @@ Outputs:
   BastionPublicIP:
     Condition: SSHAccess
     Value: !GetAtt BastionHost.Outputs.PublicIP
+
+  Region:
+    Value: !Ref AWS::Region
+
+  AvailabilityZones:
+    Description: availability zones
+    Value: !GetAtt VPC.Outputs.AvailabilityZones

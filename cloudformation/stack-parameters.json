@@ -1,5 +1,17 @@
 [
   {
+    "ParameterKey": "AZ1",
+    "ParameterValue": "us-east-1a"
+  },
+  {
+    "ParameterKey": "AZ2",
+    "ParameterValue": "us-east-1b"
+  },
+  {
+    "ParameterKey": "AZ3",
+    "ParameterValue": "us-east-1c"
+  },
+  {
     "ParameterKey": "EnableTruefaceSpoof",
     "ParameterValue": "true"
   },

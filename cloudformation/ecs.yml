@@ -228,13 +228,14 @@ Resources:
           Value: !Sub ${Namespace}-ecs-instance
           PropagateAtLaunch: true
     CreationPolicy:
-      MinSuccessfulInstancesPercent: 33 # at least 1 instance
+      AutoScalingCreationPolicy:
+        MinSuccessfulInstancesPercent: 33 # at least 1 instance
       ResourceSignal:
         Timeout: PT20M
     UpdatePolicy:
-      MinSuccessfulInstancesPercent: 33 # at least 1 instance
       AutoScalingRollingUpdate:
         MinInstancesInService: 1
+        MinSuccessfulInstancesPercent: 33 # at least 1 instance
         MaxBatchSize: 1
         PauseTime: PT15M
         SuspendProcesses:
@@ -428,6 +429,8 @@ Resources:
                   export $(cat "$NGINX_ENV_PATH" | xargs)
                 fi
 
+                mkdir -p /data/discovery/
+
                 if [[ "$API_KEY" ]]
                 then
                   echo "api key already exists"
@@ -437,7 +440,6 @@ Resources:
                   echo -e "API_KEY=\"$API_KEY\"" > /data/discovery/nginx.env
                 fi
 
-                mkdir -p /data/discovery/
                 # see kyc.yml for how it's used
 
                 cat <<EOF > /data/discovery/ecs-services.json

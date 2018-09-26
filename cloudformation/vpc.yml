@@ -12,6 +12,18 @@ Parameters:
     Description: Please enter the IP range (CIDR notation) for this VPC
     Type: String
 
+  AZ1:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Description: 1st availability zone
+
+  AZ2:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Description: 2nd availability zone
+
+  AZ3:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Description: 3rd availability zone
+
   PublicSubnet1CIDR:
     Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
     Type: String
@@ -85,7 +97,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      AvailabilityZone: !Ref AZ1
       CidrBlock: !Ref PublicSubnet1CIDR
       # instances launched in this subnet receive a public IP address
       MapPublicIpOnLaunch: true
@@ -98,7 +110,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      AvailabilityZone: !Ref AZ2
       CidrBlock: !Ref PublicSubnet2CIDR
       MapPublicIpOnLaunch: true
       Tags:
@@ -109,7 +121,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 2, !GetAZs '' ]
+      AvailabilityZone: !Ref AZ3
       CidrBlock: !Ref PublicSubnet3CIDR
       MapPublicIpOnLaunch: true
       Tags:
@@ -121,7 +133,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      AvailabilityZone: !Ref AZ1
       CidrBlock: !Ref PrivateSubnet1CIDR
       MapPublicIpOnLaunch: false
       Tags:
@@ -133,7 +145,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      AvailabilityZone: !Ref AZ2
       CidrBlock: !Ref PrivateSubnet2CIDR
       MapPublicIpOnLaunch: false
       Tags:
@@ -145,7 +157,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 2, !GetAZs '' ]
+      AvailabilityZone: !Ref AZ3
       CidrBlock: !Ref PrivateSubnet3CIDR
       MapPublicIpOnLaunch: false
       Tags:
@@ -386,5 +398,4 @@ Outputs:
 
   AvailabilityZones:
     Description: availability zones of public subnet
-    Value: !Join [",", [!Select [ 0, !GetAZs '' ], !Select [ 1, !GetAZs '' ], !Select [ 2, !GetAZs '' ]]]
-
+    Value: !Join [",", [!Ref AZ1, !Ref AZ2, !Ref AZ3]]
