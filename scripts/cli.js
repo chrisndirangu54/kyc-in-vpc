@@ -35,7 +35,7 @@ const regions = [
   'ca-central-1',
   'ap-south-1',
   'sa-east-1',
-  'us-gov-west-1',
+  // 'us-gov-west-1',
 ]
 
 const BASE_POLICY = {
@@ -101,25 +101,14 @@ const getEC2ClientByRegion = region => {
   return new AWS.EC2()
 }
 
-// const getClientByRegion = (() => {
-//   const cache = {}
-//   return region => {
-//     if (!region) {
-//       const client = cache[region] = new AWS()
-//       client.config.update({ region })
-//     }
-
-//     return cache[region]
-//   }
-// })();
-
 const updateAMIs = async () => {
-  const latestAMIs = await Promise.mapSeries(regions, region => getLatestECSImage({ region }))
-  const byRegion = latestAMIs.reduce((map, image, i) => {
-    map[regions[i]] = {
-      AMI: image.ImageId
-    }
+  let latestAMIs = await Promise.mapSeries(regions, region => getLatestECSImage({ region }))
+  latestAMIs = latestAMIs
+    .filter(ami => ami)
+    .map(ami => ami.ImageId)
 
+  const byRegion = latestAMIs.reduce((map, AMI, i) => {
+    map[regions[i]] = { AMI }
     return map
   }, {})
 

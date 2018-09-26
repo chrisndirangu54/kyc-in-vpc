@@ -130,8 +130,7 @@ Mappings:
       AMI: ami-0590d0dd683026eab
     sa-east-1:
       AMI: ami-01bca91ecf4c1f494
-    us-gov-west-1:
-      AMI: ami-5256cf33
+  
 # END_AMIS
 
   repo:
