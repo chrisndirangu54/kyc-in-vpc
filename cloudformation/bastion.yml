@@ -15,6 +15,7 @@ Parameters:
     Type: String
 
 Mappings:
+# START_AMIS
   AWSRegionToAMI:
     us-east-2:
       AMI: ami-028a9de0a7e353ed9
@@ -48,6 +49,7 @@ Mappings:
       AMI: ami-0018ff8ee48970ac3
     us-gov-west-1:
       AMI: ami-c6079ba7
+# END_AMIS
 
 Resources:
   Instance:
