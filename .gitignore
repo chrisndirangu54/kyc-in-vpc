@@ -4,3 +4,4 @@ node_modules/
 *.log
 .env*
 scripts/env.sh
+stack-parameters.json
