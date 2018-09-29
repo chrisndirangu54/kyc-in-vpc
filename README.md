@@ -19,8 +19,6 @@ The structure is based on this [reference architecture](https://github.com/aws-s
   - cloudformation/bastion.yml: optional ssh bastion host
   - cloudformation/dns.yml: optional dns alias (doesn't work yet)
 
-
-
 This stack is somewhat flexible, in that you can use parameters to enable/disable services (e.g. see parameters EnableTruefaceSpoof, EnableRankOne).
 
 ## Usage

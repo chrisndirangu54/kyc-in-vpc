@@ -207,6 +207,11 @@ Parameters:
     Description: SSH Key name to access the machine
     Default: ""
 
+  LoadBalancerCertificateArn:
+    Description: optional Amazon Resource Name (ARN) of the certificate to associate with the load balancer.
+    Type: String
+    Default: ''
+
 Conditions:
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
   # RegisterDNS: !Not [!Equals [ !Ref DNSName, ""]]
@@ -263,6 +268,7 @@ Resources:
         VPC: !GetAtt VPC.Outputs.VPC
         Subnets: !GetAtt VPC.Outputs.PublicSubnets
         SecurityGroup: !GetAtt SecurityGroups.Outputs.LoadBalancerSecurityGroup
+        CertificateArn: !Ref LoadBalancerCertificateArn
 
   ECS:
     Type: AWS::CloudFormation::Stack
