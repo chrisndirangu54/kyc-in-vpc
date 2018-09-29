@@ -3,6 +3,8 @@
 # source:
 # https://github.com/aws-samples/ecs-refarch-cloudformation/blob/master/tests/validate-templates.sh
 
+source "$(dirname "$0")/env.sh"
+
 ERROR_COUNT=0;
 
 echo "Validating AWS CloudFormation templates..."

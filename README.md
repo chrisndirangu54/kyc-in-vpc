@@ -30,6 +30,71 @@ This stack is somewhat flexible, in that you can use parameters to enable/disabl
     - set `EnableRankOne` to `"true"` or `"false"` depending on whether you want to run a RankOne container  
 1. run `scripts/create-or-update-stack.sh`
 
+## Scripts
+
+The following scripts make use of the environment variables exported from `scripts/env.sh`, so make sure you set those correctly first. 
+
+*Note: the ones pertaining to container instances currently assume a single container instance is running.*
+
+### scripts/build-and-upload.sh
+
+build and upload an image from one of the dockerfiles in the `docker/` directory
+
+Usage: `./scripts/build-and-upload.sh [repository-name] [path/to/dir/with/Dockerfile]`
+Example: `./scripts/build-and-upload.sh trueface-spoof docker/trueface-spoof`
+
+### scripts/validate-templates.sh
+
+validate cloudformation templates in the `cloudformation/` directory
+
+### scripts/upload-assets.sh
+
+uploads cloudformation templates and any related assets to S3
+
+### scripts/create-or-update-stack.sh
+
+- validates templates
+- uploads templates to s3
+- creates or updates your cloudformation stack
+
+### scripts/delete-and-create-stack.sh
+
+you guessed it
+
+### scripts/get-container-instance.sh
+
+get the instance id of the currently running container instance
+
+### scripts/get-container-instance-ip.sh
+
+get the private IP of the currently running container instance
+
+### scripts/get-api-url.sh
+
+get the base url of the load balancer, i.e. its dns name
+
+### scripts/restart-task.sh
+
+force a task to restart, useful when you pushed a new image and want the running container instance to deploy it
+
+### scripts/reboot-container-instance.sh
+
+force the currently running container instance to reboot
+
+### scripts/cli.js
+
+#### update-amis
+
+updates the AMIs in the templates to the latest ecs-optimized AMIs published by Amazon
+
+Example: `./scripts/cli.js update-amis`
+
+#### add-pull-access
+
+give another AWS account pull access to repos
+
+Example: `./scripts/cli.js add-pull-access --region us-east-1 --account 1234567 --repos trueface-spoof,rank-one,tradle-kyc-nginx-proxy`
+
 ## Todo
 
 [Good video on ECS](https://www.youtube.com/watch?v=ncN47QMt7nw)
