@@ -57,7 +57,11 @@ const BASE_POLICY = {
 }
 
 const addPullAccess = ({ policy, iamArn }) => {
-  const { AWS } = policy.Statement[0].Principal
+  let { AWS } = policy.Statement[0].Principal
+  if (typeof AWS === 'string') {
+    AWS = [AWS]
+  }
+
   if (!AWS.includes(iamArn)) {
     AWS.push(iamArn)
   }
