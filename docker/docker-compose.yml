@@ -1,7 +1,7 @@
 version: '2'
 services:
   nginx:
-    image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/tradle-kyc-nginx-proxy:latest'
+    image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/tradle-kyc-nginx-proxy:1.0.0'
     # container_name: tradle_vpc_nginx
     # build: './nginx'
     ports:
@@ -25,19 +25,19 @@ services:
   # trueface-spoof:
   #   container_name: trueface_spoof_tradle_vpc
   #   # build: './trueface-spoof'
-  #   image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:latest'
+  #   image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:1.0.0'
   #   ports:
   #     - 8085:8085
 
   # # trueface-dash:
   # #   container_name: trueface_dash_tradle_vpc
   # #   build: './trueface-dash'
-  # #   # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-dash:latest'
+  # #   # image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/trueface-dash:1.0.0'
   # #   ports:
   # #     - 5000:5000
 
   # rank-one:
   #   # container_name: rank_one_tradle_vpc
-  #   image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/rank-one:latest'
+  #   image: '404247308186.dkr.ecr.us-east-1.amazonaws.com/rank-one:1.0.0'
   #   ports:
   #     - 8080:8080

@@ -140,15 +140,15 @@ Parameters:
 
   TruefaceSpoofImage:
     Type: String
-    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:latest
+    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:1.0.0
 
   RankOneImage:
     Type: String
-    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/rank-one:latest
+    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/rank-one:1.0.0
 
   NginxImage:
     Type: String
-    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/tradle-kyc-nginx-proxy:latest
+    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/tradle-kyc-nginx-proxy:1.0.0
 
   TruefaceSpoofPath:
     Type: String

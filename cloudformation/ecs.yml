@@ -130,7 +130,7 @@ Mappings:
       AMI: ami-0590d0dd683026eab
     sa-east-1:
       AMI: ami-01bca91ecf4c1f494
-  
+
 # END_AMIS
 
   repo:
@@ -682,7 +682,7 @@ Resources:
 
         # - !If
         #   - UseTruefaceDash
-        #   - Image: !Join ["", [!Ref "AWS::AccountId", ".dkr.ecr.", !Ref "AWS::Region", ".amazonaws.com/", !FindInMap [repo, ecr, truefaceDash], ":latest"]]
+        #   - Image: !Ref TruefaceDashImage
         #     Essential: true
         #     Cpu: 256
         #     Memory: 512
