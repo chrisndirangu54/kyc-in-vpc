@@ -1,6 +1,33 @@
 # Cloudformation Stack for KYC services in ECS
 
-currently supported services:
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Currently Supported Services:](#currently-supported-services)
+- [Overview](#overview)
+- [Usage](#usage)
+- [Scripts](#scripts)
+  - [scripts/build-and-upload.sh](#scriptsbuild-and-uploadsh)
+  - [scripts/validate-templates.sh](#scriptsvalidate-templatessh)
+  - [scripts/upload-assets.sh](#scriptsupload-assetssh)
+  - [scripts/create-or-update-stack.sh](#scriptscreate-or-update-stacksh)
+  - [scripts/delete-and-create-stack.sh](#scriptsdelete-and-create-stacksh)
+  - [scripts/get-container-instance.sh](#scriptsget-container-instancesh)
+  - [scripts/get-container-instance-ip.sh](#scriptsget-container-instance-ipsh)
+  - [scripts/get-api-url.sh](#scriptsget-api-urlsh)
+  - [scripts/restart-task.sh](#scriptsrestart-tasksh)
+  - [scripts/reboot-container-instance.sh](#scriptsreboot-container-instancesh)
+  - [scripts/cli.js](#scriptsclijs)
+    - [update-amis](#update-amis)
+    - [add-pull-access](#add-pull-access)
+- [Adding a Service](#adding-a-service)
+- [Todo](#todo)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+
+## Currently Supported Services:
 
 - TrueFace Spoof
 - RankOne
@@ -94,6 +121,15 @@ Example: `./scripts/cli.js update-amis`
 give another AWS account pull access to repos
 
 Example: `./scripts/cli.js add-pull-access --region us-east-1 --account 1234567 --repos trueface-spoof,rank-one,tradle-kyc-nginx-proxy`
+
+## Adding a Service
+
+Let's say you want to add a third party service that checks if the user is a zombie registered with the Zombie Census Bureau.
+
+1. create a directory under `./docker` with your service's Dockerfile, e.g. `./docker/zombie-registry`
+2. run `./scripts/build-and-upload.sh zombie-registry zombie-registry` (see #scripts for usage)
+3. search for `RankOne` and `RANK_ONE` in `cloudformation/*.yml` and add similar stack variables and container environment variables for your service
+4. add a block in `docker/nginx/entrypoint.sh` which takes the environment variables passed to the container via cloudformation, and builds the location template for your service
 
 ## Todo
 
