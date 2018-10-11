@@ -21,7 +21,9 @@
   - [scripts/cli.js](#scriptsclijs)
     - [update-amis](#update-amis)
     - [add-pull-access](#add-pull-access)
-- [Adding a Service](#adding-a-service)
+- [Development](#development)
+  - [Prerequisites](#prerequisites)
+  - [Adding a Service](#adding-a-service)
 - [Todo](#todo)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -122,7 +124,14 @@ give another AWS account pull access to repos
 
 Example: `./scripts/cli.js add-pull-access --region us-east-1 --account 1234567 --repos trueface-spoof,rank-one,tradle-kyc-nginx-proxy`
 
-## Adding a Service
+## Development
+
+### Prerequisites
+
+- [AWS CLI](http://docs.aws.amazon.com/cli/latest/userguide/installing.html)
+- [jq](https://stedolan.github.io/jq/download/): a great command line JSON parser (On OS X, you can `brew install jq`)
+
+### Adding a Service
 
 Let's say you want to add a third party service that checks if the user is a zombie registered with the Zombie Census Bureau.
 
