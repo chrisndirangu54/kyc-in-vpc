@@ -128,6 +128,7 @@ Example: `./scripts/cli.js add-pull-access --region us-east-1 --account 1234567 
 
 ### Prerequisites
 
+- [Node.JS](https://nodejs.org/en/) >= 8.10.0
 - [AWS CLI](http://docs.aws.amazon.com/cli/latest/userguide/installing.html)
 - [jq](https://stedolan.github.io/jq/download/): a great command line JSON parser (On OS X, you can `brew install jq`)
 
