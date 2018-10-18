@@ -65,6 +65,8 @@ const addPullAccess = ({ policy, iamArn }) => {
   if (!AWS.includes(iamArn)) {
     AWS.push(iamArn)
   }
+
+  policy.Statement[0].Principal.AWS = AWS
 }
 
 const getIamArnForAccount = account => `arn:aws:iam::${account}:root`
