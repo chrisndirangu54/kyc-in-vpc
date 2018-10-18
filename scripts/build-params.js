@@ -41,4 +41,10 @@ const build = async paramsFile => {
   return params
 }
 
-build(paramsFile).then(prettyPrint, console.error)
+build(paramsFile).then(
+  prettyPrint,
+  err => {
+    console.error(err)
+    process.exitCode = 1
+  }
+)
