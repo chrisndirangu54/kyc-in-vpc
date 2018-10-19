@@ -1,0 +1,3 @@
+#!/bin/sh
+exec 2>&1
+exec chpst -u mongodb -v /usr/bin/mongod --config /etc/mongod.conf

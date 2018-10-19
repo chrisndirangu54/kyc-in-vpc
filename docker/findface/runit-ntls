@@ -1,0 +1,13 @@
+#!/bin/sh
+exec 2>&1
+if [ ! -f "/etc/discovery/findface.token" ]; then
+  check=$(curl -I -s -w "%{http_code}" -L "http://localhost:8000/" -o /dev/null)
+  if [ $check -eq 404 ]; then
+    findface-facenapi.token --short > ff.token
+    token=$(cat ff.token) && echo "Token $token" > ff.token
+    mv ff.token /etc/discovery/findface.token
+  fi  
+  exit 1
+fi
+chpst -u ntech -v ntls --load-opts /etc/ntls.cfg
+
