@@ -42,6 +42,7 @@ then
   echo "adding /location for TrueFace Spoof"
   export LOCATION_HOSTNAME="$HOST_TRUEFACE_SPOOF"
   export LOCATION_PORT="$PORT_TRUEFACE_SPOOF"
+  export TOKEN=""
   LOCATION=$(envify /etc/nginx/conf.d/template-location.conf)
   LOCATIONS=$(echo "$LOCATIONS
 
@@ -54,6 +55,7 @@ then
   echo "adding /location for TrueFace dashboard"
   export LOCATION_HOSTNAME="$HOST_TRUEFACE_DASH"
   export LOCATION_PORT="$PORT_TRUEFACE_DASH"
+  EXPORT TOKEN=""
   LOCATION=$(envify /etc/nginx/conf.d/template-location.conf)
   LOCATIONS=$(echo "$LOCATIONS
 
@@ -66,6 +68,24 @@ then
   echo "adding /location for RankOne"
   export LOCATION_HOSTNAME="$HOST_RANK_ONE"
   export LOCATION_PORT="$PORT_RANK_ONE"
+  export TOKEN=""
+  LOCATION=$(envify /etc/nginx/conf.d/template-location.conf)
+  LOCATIONS=$(echo "$LOCATIONS
+
+$LOCATION
+")
+fi
+
+if [[ "$ENABLE_FINDFACE" == "1" ]]
+then
+  until [ -r /etc/nginx/discovery/findface.token ];
+  do
+    sleep 1s
+  done
+  echo "adding /location for FindFace"
+  export LOCATION_HOSTNAME="$HOST_FINDFACE"
+  export LOCATION_PORT="$PORT_FINDFACE"
+  export TOKEN=$(cat /etc/nginx/discovery/findface.token)
   LOCATION=$(envify /etc/nginx/conf.d/template-location.conf)
   LOCATIONS=$(echo "$LOCATIONS
 
@@ -77,7 +97,7 @@ export LOCATIONS="$LOCATIONS"
 
 envify /etc/nginx/conf.d/template-main.conf /etc/nginx/nginx.conf
 
-# echo "NGINX CONF:"
-# cat /etc/nginx/nginx.conf
+#echo "NGINX CONF:"
+#cat /etc/nginx/nginx.conf
 
 nginx
