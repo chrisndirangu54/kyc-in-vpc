@@ -20,6 +20,10 @@
     "ParameterValue": "true"
   },
   {
+    "ParameterKey": "EnableFindface",
+    "ParameterValue": "true"
+  },
+  {
     "ParameterKey": "KeyName",
     "ParameterValue": "micro1"
   },

@@ -87,6 +87,15 @@ Parameters:
   RankOnePath:
     Type: String
 
+  EnableFindface:
+    Type: String
+
+  FindfaceImage:
+    Type: String
+  
+  FindfacePath:
+    Type: String
+
 Conditions:
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
   NeedsVolume: !Not [!Equals [ !Ref VolumeType, ""]]
@@ -94,6 +103,7 @@ Conditions:
   UseTruefaceSpoof: !Equals [!Ref EnableTruefaceSpoof, "true"]
   # UseTruefaceDash: !Equals [!Ref EnableTruefaceDash, "true"]
   UseRankOne: !Equals [!Ref EnableRankOne, "true"]
+  UseFindface: !Equals [!Ref EnableFindface, "true"]
 
 Mappings:
   # source:
@@ -139,6 +149,7 @@ Mappings:
       truefaceSpoof: trueface-spoof
       # truefaceDash: trueface-dash
       rankOne: rank-one
+      findface: tradle-findface
 
 Resources:
 
@@ -456,6 +467,10 @@ Resources:
                       "enabled": ${EnableRankOne},
                       "path": "${RankOnePath}"
                     }
+                    "findface": {
+                      "enabled": ${EnableFindface},
+                      "path": "${FindfacePath}"
+                    }
                   }
                 }
                 EOF
@@ -621,6 +636,10 @@ Resources:
               - UseRankOne
               - !Ref RankOnePath
               - !Ref AWS::NoValue
+            - !If
+              - UseFindface
+              - !Ref FindfacePath
+              - !Ref AWS::NoValue  
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -642,6 +661,10 @@ Resources:
               Value: !Ref RankOnePath
             - Name: PORT_RANK_ONE
               Value: '8080'
+            - Name: HOST_FINDFACE
+              Value: !Ref FindfacePath
+            - Name: PORT_FINDFACE
+              Value: '8000' 
             - Name: ENABLE_TRUEFACE_SPOOF
               Value: !If
                 - UseTruefaceSpoof
@@ -655,6 +678,11 @@ Resources:
             - Name: ENABLE_RANK_ONE
               Value: !If
                 - UseRankOne
+                - '1'
+                - '0'
+            - Name: ENABLE_FINDFACE
+              Value: !If
+                - UseFindface
                 - '1'
                 - '0'
           MountPoints:
@@ -721,6 +749,28 @@ Resources:
                 awslogs-group: !Ref LogGroup
                 awslogs-region: !Ref AWS::Region
                 awslogs-stream-prefix: !Ref RankOnePath
+          - !Ref "AWS::NoValue"
+          
+        - !If
+          - UseFindface
+          - Image: !Ref FindfaceImage
+            Essential: true
+            Cpu: 1024
+            Memory: 2048
+            Name: !Ref FindfacePath
+            PortMappings:
+              - ContainerPort: 8000
+                HostPort: 0
+                Protocol: -1
+            LogConfiguration:
+              LogDriver: awslogs
+              Options:
+                awslogs-group: !Ref LogGroup
+                awslogs-region: !Ref AWS::Region
+                awslogs-stream-prefix: !Ref FindfacePath
+            MountPoints:
+              - ContainerPath: /etc/discovery
+                SourceVolume: discovery
           - !Ref "AWS::NoValue"
 
   LogGroup:

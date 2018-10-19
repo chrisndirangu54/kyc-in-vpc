@@ -137,6 +137,14 @@ Parameters:
     AllowedValues:
       - "true"
       - "false"
+   
+  EnableFindface:
+    Type: String
+    Description: enable Findface service
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
 
   TruefaceSpoofImage:
     Type: String
@@ -150,9 +158,13 @@ Parameters:
     Type: String
     Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/tradle-kyc-nginx-proxy:1.0.0
 
+  FindfaceImage:
+    Type: String
+    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/tradle-findface:1.0.0
+
   TruefaceSpoofPath:
     Type: String
-    Description: root path segement of TrueFace Spoof API
+    Description: root path segment of TrueFace Spoof API
     Default: "trueface-spoof"
     # AllowedPattern: "^[a-zA-Z0-9\\-]+$"
     AllowedValues:
@@ -161,12 +173,21 @@ Parameters:
 
   RankOnePath:
     Type: String
-    Description: root path segement of RankOne API
+    Description: root path segment of RankOne API
     Default: "rank-one"
     # AllowedPattern: "^[a-zA-Z0-9\\-]+$"
     AllowedValues:
       - 'rank-one'
     ConstraintDescription: "path not editable at this time, use value: rank-one"
+  
+  FindfacePath:
+    Type: String
+    Description: root path segment of Findface API
+    Default: "findface"
+    # AllowedPattern: "^[a-zA-Z0-9\\-]+$"
+    AllowedValues:
+      - 'findface'
+    ConstraintDescription: "path not editable at this time, use value: findface" 
 
   DesiredTaskCount:
     Type: Number
@@ -293,11 +314,14 @@ Resources:
         ALBListener: !GetAtt ALB.Outputs.Listener
         EnableTruefaceSpoof: !Ref EnableTruefaceSpoof
         EnableRankOne: !Ref EnableRankOne
+        EnableFindface: !Ref EnableFindface
         TruefaceSpoofImage: !Ref TruefaceSpoofImage
         RankOneImage: !Ref RankOneImage
         NginxImage: !Ref NginxImage
+        FindfaceImage: !Ref FindfaceImage
         TruefaceSpoofPath: 'trueface-spoof'
         RankOnePath: 'rank-one'
+        FindfacePath: 'findface'
 
   # KYC sub-stack was collapsed into ECS because of this:
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-attribute-dependson.html
@@ -373,6 +397,15 @@ Outputs:
       - "/"
       - - !GetAtt ALB.Outputs.LoadBalancerUrl
         - !Ref RankOnePath
+  
+  FindfaceApiUrl:
+    Condition: UseFindface
+    Description: Findface API base url
+    Value: !Join
+      - "/"
+      - - !GetAtt ALB.Outputs.LoadBalancerUrl
+        - !Ref FindfacePath
+        - "v1/verify"  
 
   BastionHost:
     Condition: SSHAccess
