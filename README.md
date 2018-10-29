@@ -141,6 +141,18 @@ Let's say you want to add a third party service that checks if the user is a zom
 3. search for `RankOne` and `RANK_ONE` in `cloudformation/*.yml` and add similar stack variables and container environment variables for your service
 4. add a block in `docker/nginx/entrypoint.sh` which takes the environment variables passed to the container via cloudformation, and builds the location template for your service
 
+### Building RankOne
+
+You'll need the SDK (Tradle team may know it as roc-face-linux.zip), and a license ROC.lic. Unzip the first, place ROC.lic and the Dockerfile in `docker/rankone/` in its root dir, and build.
+
+### Building TrueFace
+
+You'll need access to the base docker image `trueface/tf-spoof` and a `creds.json`. Place the latter in `docker/trueface-spoof/` and build with the Dockerfile there.
+
+### Building Nginx
+
+First, update `docker/nginx/entrypoint.sh`. Make sure it generates a `location` block for your image. Then build from the Dockerfile in that directory.
+
 ## Todo
 
 [Good video on ECS](https://www.youtube.com/watch?v=ncN47QMt7nw)
