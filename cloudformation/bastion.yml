@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: root stack for parity in ECS
+Description: SSH bastion host
 
 Parameters:
   KeyName:
@@ -47,7 +47,7 @@ Mappings:
       AMI: ami-0590d0dd683026eab
     sa-east-1:
       AMI: ami-01bca91ecf4c1f494
-  
+
 # END_AMIS
 
 Resources:
