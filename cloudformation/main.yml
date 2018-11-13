@@ -144,7 +144,7 @@ Parameters:
 
   RankOneImage:
     Type: String
-    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/rank-one:1.0.1
+    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/rank-one:1.0.2
 
   NginxImage:
     Type: String
