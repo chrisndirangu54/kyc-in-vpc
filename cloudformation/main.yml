@@ -140,7 +140,7 @@ Parameters:
 
   TruefaceSpoofImage:
     Type: String
-    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:1.0.0
+    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:1.0.1
 
   RankOneImage:
     Type: String
