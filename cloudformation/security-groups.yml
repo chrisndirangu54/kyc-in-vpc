@@ -20,8 +20,12 @@ Parameters:
     Type: String
     Default: ""
 
+  AllowEgressFromECS:
+    Type: String # true/false
+
 Conditions:
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
+  EgressFromECS: !Equals [!Ref AllowEgressFromECS, "true"]
 
 Resources:
 
@@ -44,6 +48,15 @@ Resources:
             CidrIp: 0.0.0.0/0
             IpProtocol: tcp
           - !Ref "AWS::NoValue"
+      SecurityGroupEgress: !If
+        - EgressFromECS
+        - !Ref "AWS::NoValue"
+        # disable all traffic
+        # see answer from here: https://stackoverflow.com/questions/45629965/how-to-deny-all-outbound-traffic-from-an-aws-ec2-instance-using-a-security-group
+        #   "Even though CloudFormation does not allow an empty SecurityGroupEgress or SecurityGroupIngress properties,
+        #   you can trick it by allowing allowing all outbound traffic to localhost only"
+        - - IpProtocol: -1
+            CidrIp: 127.0.0.1/32
       Tags:
         - Key: Name
           Value: !Sub ${Namespace}-ecs-hosts

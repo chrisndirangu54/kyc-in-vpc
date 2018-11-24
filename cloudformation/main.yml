@@ -212,6 +212,13 @@ Parameters:
     Type: String
     Default: ''
 
+  AllowEgressFromECS:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+
 Conditions:
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
   # RegisterDNS: !Not [!Equals [ !Ref DNSName, ""]]
@@ -248,6 +255,7 @@ Resources:
         Namespace: !Join ["", [!Ref Namespace, !Ref "AWS::StackName"]]
         VPC: !GetAtt VPC.Outputs.VPC
         KeyName: !Ref KeyName
+        AllowEgressFromECS: !Ref AllowEgressFromECS
 
   BastionHost:
     Condition: SSHAccess
