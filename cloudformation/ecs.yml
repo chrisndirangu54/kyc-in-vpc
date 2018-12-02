@@ -32,6 +32,14 @@ Parameters:
   S3PathToWriteDiscovery:
     Type: String
 
+  S3PathToRankOneLicense:
+    Type: String
+    Default: ''
+
+  S3PathToTrueFaceLicense:
+    Type: String
+    Default: ''
+
   # ServiceENIIP:
   #   Type: String
   #   Description: Private IP for ENI
@@ -91,6 +99,8 @@ Conditions:
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]
   NeedsVolume: !Not [!Equals [ !Ref VolumeType, ""]]
   ShouldSaveDiscovery: !Not [!Equals [ !Ref S3PathToWriteDiscovery, ""]]
+  ShouldLoadRankOneLicense: !Not [!Equals [ !Ref S3PathToRankOneLicense, ""]]
+  ShouldLoadTrueFaceLicense: !Not [!Equals [ !Ref S3PathToTrueFaceLicense, ""]]
   UseTruefaceSpoof: !Equals [!Ref EnableTruefaceSpoof, "true"]
   # UseTruefaceDash: !Equals [!Ref EnableTruefaceDash, "true"]
   UseRankOne: !Equals [!Ref EnableRankOne, "true"]
@@ -206,6 +216,24 @@ Resources:
                 - s3:PutObject
               Resource:
                 - !Sub arn:aws:s3:::${S3PathToWriteDiscovery}
+            - !Ref AWS::NoValue
+          - !If
+            - ShouldLoadRankOneLicense
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:HeadObject
+              Resource:
+                - !Sub arn:aws:s3:::${S3PathToRankOneLicense}
+            - !Ref AWS::NoValue
+          - !If
+            - ShouldLoadTrueFaceLicense
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:HeadObject
+              Resource:
+                - !Sub arn:aws:s3:::${S3PathToTrueFaceLicense}
             - !Ref AWS::NoValue
 
   ECSInstanceProfile:
@@ -423,14 +451,32 @@ Resources:
                 API_KEY=""
                 NGINX_ENV_PATH=""
 
+                mkdir -p /data
+                mkdir -p /data/license/
+                mkdir -p /data/discovery/
+
+                if [[ '${S3PathToRankOneLicense}' ]]
+                then
+                  echo "loading RankOne license"
+                  aws s3 cp "s3://${S3PathToRankOneLicense}" /data/license/rankone/ROC.lic
+                else
+                  echo "assuming RankOne license is baked into image"
+                fi
+
+                if [[ '${S3PathToTrueFaceLicense}' ]]
+                then
+                  echo "loading TrueFace license"
+                  aws s3 cp "s3://${S3PathToTrueFaceLicense}" /data/license/trueface/creds.json
+                else
+                  echo "assuming TrueFace license is baked into image"
+                fi
+
                 echo "generating discovery & credentials"
 
                 if [[ -f /data/discovery/nginx.env ]]
                 then
                   export $(cat "$NGINX_ENV_PATH" | xargs)
                 fi
-
-                mkdir -p /data/discovery/
 
                 if [[ "$API_KEY" ]]
                 then
@@ -598,6 +644,12 @@ Resources:
         - Host:
             SourcePath: /data/discovery
           Name: discovery
+        - Host:
+            SourcePath: /data/license/rankone/ROC.lic
+          Name: rankone-license
+        - Host:
+            SourcePath: /data/license/trueface/creds.json
+          Name: trueface-license
 
       ContainerDefinitions:
         - Image: !Ref NginxImage
@@ -678,6 +730,13 @@ Resources:
                 awslogs-group: !Ref LogGroup
                 awslogs-region: !Ref AWS::Region
                 awslogs-stream-prefix: !Ref TruefaceSpoofPath
+            MountPoints:
+              - !If
+                - ShouldLoadTrueFaceLicense
+                - ContainerPath: /creds.json
+                  SourceVolume: trueface-license
+                  ReadOnly: true
+                - !Ref AWS::NoValue
           - !Ref "AWS::NoValue"
 
         # - !If
@@ -721,6 +780,13 @@ Resources:
                 awslogs-group: !Ref LogGroup
                 awslogs-region: !Ref AWS::Region
                 awslogs-stream-prefix: !Ref RankOnePath
+            MountPoints:
+              - !If
+                - ShouldLoadRankOneLicense
+                - ContainerPath: /go/src/app/ROC.lic
+                  SourceVolume: rankone-license
+                  ReadOnly: true
+                - !Ref AWS::NoValue
           - !Ref "AWS::NoValue"
 
   LogGroup:

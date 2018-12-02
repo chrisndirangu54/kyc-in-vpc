@@ -21,7 +21,11 @@ Parameters:
     Default: ""
 
   AllowEgressFromECS:
-    Type: String # true/false
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
 
 Conditions:
   SSHAccess: !Not [!Equals [ !Ref KeyName, ""]]

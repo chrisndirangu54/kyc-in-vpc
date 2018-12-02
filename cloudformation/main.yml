@@ -140,11 +140,11 @@ Parameters:
 
   TruefaceSpoofImage:
     Type: String
-    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:1.0.1
+    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/trueface-spoof:1.1.0
 
   RankOneImage:
     Type: String
-    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/rank-one:1.0.2
+    Default: 210041114155.dkr.ecr.us-east-1.amazonaws.com/rank-one:1.1.0
 
   NginxImage:
     Type: String
@@ -196,6 +196,20 @@ Parameters:
     Description: |
       S3 path to write discovery info to
       This is typically something like: tdl-xxxx-ltd-private-conf-bucket-xyz/ecs-services.json
+
+  S3PathToRankOneLicense:
+    Type: String
+    Default: ''
+    Description: |
+      S3 path to retrieve RankOne license
+      This is typically something like: tdl-xxxx-ltd-private-conf-bucket-xyz/license/ROC.lic
+
+  S3PathToTrueFaceLicense:
+    Type: String
+    Default: ''
+    Description: |
+      S3 path to retrieve TrueFace license
+      This is typically something like: tdl-xxxx-ltd-private-conf-bucket-xyz/license/trueface-creds.json
 
   # DNSName:
   #   Type: String
@@ -297,6 +311,8 @@ Resources:
         # InstanceTenancy: !Ref InstanceTenancy
         ALBUrl: !GetAtt ALB.Outputs.LoadBalancerUrl
         S3PathToWriteDiscovery: !Ref S3PathToWriteDiscovery
+        S3PathToRankOneLicense: !Ref S3PathToRankOneLicense
+        S3PathToTrueFaceLicense: !Ref S3PathToTrueFaceLicense
         DesiredTaskCount: !Ref DesiredTaskCount
         ALBListener: !GetAtt ALB.Outputs.Listener
         EnableTruefaceSpoof: !Ref EnableTruefaceSpoof

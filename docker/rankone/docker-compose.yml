@@ -1,0 +1,11 @@
+version: '3'
+services:
+  rankone:
+    image: tradle/rank-one:1.1.0
+    network_mode: host
+    container_name: rankone
+    ports:
+      - 8080:8080
+    volumes:
+      # make sure to add the license file here
+      - ./ROC.lic:/go/src/app/ROC.lic:ro

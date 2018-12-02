@@ -8,7 +8,8 @@ COPY bin bin
 COPY lib lib
 COPY include include
 COPY share share
-COPY ROC.lic .
+# license is now loaded dynamically
+#COPY ROC.lic .
 COPY go go
 
 WORKDIR ./go
