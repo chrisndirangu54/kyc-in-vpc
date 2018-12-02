@@ -8,7 +8,7 @@ Parameters:
 
   S3TemplatesBaseUrl:
     Type: String
-    Default: https://tradle.io.s3.amazonaws.com/cf-templates/kyc-in-ecs
+    Default: https://tradle.io.s3.amazonaws.com/cf-templates/kyc-in-ecs/1.1.0
 
   # VPC
 
