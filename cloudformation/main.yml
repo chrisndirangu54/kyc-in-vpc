@@ -8,7 +8,7 @@ Parameters:
 
   S3TemplatesBaseUrl:
     Type: String
-    Default: https://tradle.io.s3.amazonaws.com/cf-templates/kyc-in-ecs/1.1.0
+    Default: https://tradle.io.s3.amazonaws.com/cf-templates/kyc-in-ecs/1.1.1
 
   # VPC
 
@@ -211,6 +211,12 @@ Parameters:
       S3 path to retrieve TrueFace license
       This is typically something like: tdl-xxxx-ltd-private-conf-bucket-xyz/license/trueface-creds.json
 
+  S3KMSKey:
+    Type: String
+    Default: ''
+    Description: |
+      If your S3 bucket with licenses is encrypted via KMS, set the arn of the relevant KMS key here
+
   # DNSName:
   #   Type: String
   #   Description: DNS name to register
@@ -313,6 +319,7 @@ Resources:
         S3PathToWriteDiscovery: !Ref S3PathToWriteDiscovery
         S3PathToRankOneLicense: !Ref S3PathToRankOneLicense
         S3PathToTrueFaceLicense: !Ref S3PathToTrueFaceLicense
+        S3KMSKey: !Ref S3KMSKey
         DesiredTaskCount: !Ref DesiredTaskCount
         ALBListener: !GetAtt ALB.Outputs.Listener
         EnableTruefaceSpoof: !Ref EnableTruefaceSpoof

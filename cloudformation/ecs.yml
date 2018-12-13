@@ -40,6 +40,10 @@ Parameters:
     Type: String
     Default: ''
 
+  S3KMSKey:
+    Type: String
+    Default: ''
+
   # ServiceENIIP:
   #   Type: String
   #   Description: Private IP for ENI
@@ -104,6 +108,7 @@ Conditions:
   UseTruefaceSpoof: !Equals [!Ref EnableTruefaceSpoof, "true"]
   # UseTruefaceDash: !Equals [!Ref EnableTruefaceDash, "true"]
   UseRankOne: !Equals [!Ref EnableRankOne, "true"]
+  HaveS3KMSKey: !Not [!Equals [!Ref S3KMSKey, ""]]
 
 Mappings:
   # source:
@@ -234,6 +239,15 @@ Resources:
                 - s3:HeadObject
               Resource:
                 - !Sub arn:aws:s3:::${S3PathToTrueFaceLicense}
+            - !Ref AWS::NoValue
+          - !If
+            - HaveS3KMSKey
+            - Effect: Allow
+              Action:
+                - kms:Decrypt
+                - kms:GenerateDataKey
+              Resource:
+                - Ref: S3KMSKey
             - !Ref AWS::NoValue
 
   ECSInstanceProfile:
